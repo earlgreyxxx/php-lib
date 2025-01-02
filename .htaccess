@@ -1,0 +1,10 @@
+#アクセス制限
+#<FilesMatch "\.php$">
+#order allow,deny
+#</FilesMatch>
+
+#Limitが上書きできないサーバーの場合リライトモジュールを使用する。
+<IfModule mod_rewrite.c>
+RewriteEngine On
+RewriteRule ^(.*)$ - [F]
+</IfModule>
