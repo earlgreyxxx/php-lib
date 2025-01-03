@@ -42,7 +42,7 @@ try {
   define('SITE_LIB_INC_DIR',SITE_LIB_DIR.'/inc');
   define('SITE_LIB_APP_DIR',SITE_LIB_DIR.'/app'.(file_exists(SITE_LIB_DIR.'/app.compressed') ? '.compressed' : ''));
 
-  init_autoload([LIB_CORE_DIR,LIB_DIR.'/ext']);
+  init_autoload([LIB_CORE_DIR]);
   include_files(LIB_INC_DIR);
   include_files(SITE_LIB_INC_DIR);
 
