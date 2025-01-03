@@ -66,7 +66,7 @@
   //   
   // inserter
   // public function insert()
-  // public function values($values)
+  // public function values(string|array $values,bool $validate = false)
   // public function into($table,$is_quoted = false)
  
   // selector
@@ -937,13 +937,29 @@ class DB
     return $this;
   }
 
-  public function values($values)
+  public function values(string|array $values,bool $validate = false)
   {
     if(!array_key_exists('values',$this->sql) || !is_array($this->sql['values']))
       $this->sql['values'] = array();
 
     if(!empty($values))
+    {
+      if($validate && is_array($values))
+      {
+        $pdo = $this->pdo;
+        foreach($values as &$v)
+        {
+          if(is_string($v))
+            $v = $pdo->quote($v);
+          else if(is_null($v))
+            $v = 'null';
+          else if(is_bool($v))
+            $v = intval($v);
+        }
+      }
+
       $this->sql['values'][] = $values;
+    }
 
     return $this;
   }
