@@ -124,8 +124,8 @@ class Csv extends SplFileObject
     $rv = false;
     if($length)
       {
-        $is_task = $callable && is_callable($callable) && (($flags & CALLABLE_IS_TASK) == CALLABLE_IS_TASK);
-        $is_filter = $callable && is_callable($callable) && (($flags & CALLABLE_IS_FILTER) == CALLABLE_IS_FILTER);
+        $is_task = $callable && is_callable($callable) && (($flags & self::CALLABLE_IS_TASK) == self::CALLABLE_IS_TASK);
+        $is_filter = $callable && is_callable($callable) && (($flags & self::CALLABLE_IS_FILTER) == self::CALLABLE_IS_FILTER);
         
         $count = 0;
         $num = $offset;
