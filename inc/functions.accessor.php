@@ -199,7 +199,11 @@ function get_route_url($route = '',?array $params = null,$suffix = false)
   if(empty($route))
     $route = $rte->current();
 
-  return sprintf('%s%s',get_base_url(),$rte->getPath($route,$params,$suffix));
+  $base_url = get_base_url(); 
+  if($base_url === '/')
+    $base_url = '';
+
+  return sprintf('%s%s',$base_url,$rte->getPath($route,$params,$suffix));
 }
 
 function get_route_tag($route = '')
