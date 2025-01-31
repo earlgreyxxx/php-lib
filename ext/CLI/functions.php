@@ -72,18 +72,19 @@ function promptAndRequire(string $prompt,bool $hidden = false,bool $confirm = fa
   do {
     $rv = read(sprintf('%s: ',$prompt),$hidden);
 
-    if(empty($rv))
+    $rv = mb_trim($rv);
+    if(mb_strlen($rv) <= 0)
       continue;
 
     if($confirm)
     {
-      if($rv !== read('retype same: ',$hidden))
-        $rv = null;
+      if($rv !== mb_trim(read('retype same: ',$hidden)))
+        $rv = '';
     }
 
-  } while(empty($rv) && --$count > 0);
+  } while(mb_strlen($rv) <= 0 && --$count > 0);
 
-  if(empty($rv))
+  if(mb_strlen($rv) <= 0)
     throw new RuntimeException('falied to required input....');
 
   return $rv;
