@@ -69,7 +69,7 @@ class DatabaseRows extends DatabaseTable implements Iterator,ArrayAccess,Countab
   protected function getRowClass()
   {
     if(!$this->rowClass)
-      $this->rowclass = function($param) {};
+      $this->rowClass = function($param) {};
 
     return $this->rowClass;
   }
