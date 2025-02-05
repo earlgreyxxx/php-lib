@@ -115,10 +115,20 @@ class DatabaseRows extends DatabaseTable implements Iterator,ArrayAccess,Countab
   }
 
   // select => generator
-  protected function getGenerator($conditions = null,$limit = 0,$offset = 0,?array $orderbies = null,?array $columns = null,$quotedColumn = false)
+  protected function getEnumerator($conditions = null,int $limit = 0,int $offset = 0,?array $orderbies = null,?array $columns = null,$quotedColumn = false) : Generator
+  {
+    return $this->createGenerator(true,$conditions, $limit,$offset,$orderbies,$columns,$quotedColumn);
+  }
+
+  protected function getGenerator($conditions = null,int $limit = 0,int $offset = 0,?array $orderbies = null,?array $columns = null,$quotedColumn = false) : Generator
+  {
+    return $this->createGenerator(false,$conditions, $limit,$offset,$orderbies,$columns,$quotedColumn);
+  }
+
+  private function createGenerator(bool $useDB,mixed $conditions,int $limit,int $offset,?array $orderbies,?array $columns,bool $quotedColumn) : Generator
   {
     $pdoex = $this->getHandle();
-    $db = DB::CreateInstance($pdoex)->select()->from($this->getTable());
+    $db = $this->getDB($useDB);
     if(!empty($columns))
       $db->columns($columns,$quotedColumn);
 

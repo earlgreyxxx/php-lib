@@ -58,9 +58,12 @@ abstract class DatabaseTable
   }
 
   private $db;
-  protected function getDB()
+  protected function getDB(bool $useDB = false)
   {
-    return clone $this->db;
+    if($useDB)
+      return clone $this->db;
+    else
+      return DB::CreateInstance($this->getHandle())->select()->from($this->getTable());
   }
   protected function setDB(DB $db)
   {
