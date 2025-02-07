@@ -147,7 +147,10 @@ class DatabaseRows extends DatabaseTable implements Iterator,ArrayAccess,Countab
         throw new RuntimeException(_('argument type error'));
 
       foreach($conditions as $condition)
-        $db->where($condition);
+      {
+        if (!empty($condition))
+          $db->where($condition);
+      }
     }
 
     if(false === ($sth = $db->query()))
