@@ -13,6 +13,13 @@
 abstract class PDOExtension extends PDO
 {
   /*------------------------------------------------------------------------------
+    Statics
+  ------------------------------------------------------------------------------*/
+  protected static $CONDITION = '';
+  protected static $SELECT_LOCK = '';
+  protected static $DBM = '';
+
+  /*------------------------------------------------------------------------------
    object contant:
   ------------------------------------------------------------------------------*/
   const GET_NAME = 1;
@@ -61,7 +68,7 @@ abstract class PDOExtension extends PDO
   abstract public function begin();
 
   // sql exec depends dbms
-  abstract public function createTable($columns,$ai);
+  abstract public function createTable($table,$columns);
 
   // sql exec depends dbms
   abstract public function createIndex($table,$index,$columns,$unique = false,$grant = 'alter');

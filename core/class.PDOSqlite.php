@@ -198,7 +198,7 @@ class PDOSqlite extends PDOExtension
     if($this->isInTransaction !== false)
     {
       if($rv = $this->exec('RALLBACK'))
-        $this->inInTransaction = 0;
+        $this->isInTransaction = 0;
     }
     else
     {
