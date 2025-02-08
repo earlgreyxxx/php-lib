@@ -23,7 +23,7 @@ class DatabaseRow extends DatabaseTable
     );
 
     if(is_array($init) || $init instanceof stdClass)
-      $this->set($init,$isHash);
+      $this->set($init,$init_is_hash);
     else if(!empty($init))
       $this->initialize($init);
     else
@@ -221,8 +221,8 @@ class DatabaseRow extends DatabaseTable
 
     if($rv === false)
     {
-      $this->setErrorInfo(print_r($sth->errorInfo(),true));
-      $this->setErrorInfo($db->getQuery());
+      DB::setErrorInfo(print_r($sth->errorInfo(),true));
+      DB::setErrorInfo($db->getQuery());
       throw new RuntimeException(_('Database access failed'));
     }
     
