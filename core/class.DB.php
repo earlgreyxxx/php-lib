@@ -107,7 +107,7 @@ class DB
   /*-----------------------------------------------------------------------
     statics
   -----------------------------------------------------------------------*/
-  public static bool $SQLSERVER_IS_2008 = NULL;
+  public static bool $SQLSERVER_IS_2008 = false;
 
   private static array $Errors = [];
   public static function SetErrorInfo($mixed) : void
@@ -750,7 +750,7 @@ class DB
     return $this->_joinOnSubQuery($db->getQuery(),$alias,$condition,$type);
   }
 
-  public function join(string $table,string $condition,string $type = 'INNER') : DB
+  public function join(string $table,mixed $condition,string $type = 'INNER') : DB
   {
     return $this->_join($table,$condition,$type);
   }
