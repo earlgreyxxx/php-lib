@@ -120,13 +120,13 @@ class DB
   }
 
   // Factory
-  public static function CreateInstance(PDOExtension $pdo,array $options = array()) : DB
+  public static function CreateInstance(PDOExtension $pdo,array $options = []) : DB
   {
     return new static($pdo,$options);
   }
 
   // returns PDOStatement instance
-  public static function Union(PDOExtension $pdo,array $dbs,$hasAll = false,?array $addtions = null) : bool|PDOStatement
+  public static function Union(PDOExtension $pdo,array $dbs,bool $hasAll = false,?array $addtions = null) : bool|PDOStatement
   {
     $rv = false;
     $queries = array();
@@ -174,7 +174,7 @@ class DB
 
   // helper for COUNT($column) returns integer or PDOStatement instance when is_prepared was true
   // $conditions is array or string, pass to where method directly
-  public static function Count(PDOExtension $pdo,string $table,string|array $count_column = '*',string|array $conditions = null,bool $is_prepared = false) : mixed
+  public static function Count(PDOExtension $pdo,string $table,string $count_column = '*',string|array $conditions = null,bool $is_prepared = false) : mixed
   {
     if(!$pdo->exists($table))
       throw new RuntimeException(_('table not exists'));
@@ -226,7 +226,7 @@ class DB
     if(false === ($sth = $db->query()))
       throw new RuntimeException(_('Database access failed'));
 
-    $cnt = $sth->fetchColumn();
+    $cnt = intval($sth->fetchColumn());
     $sth->closeCursor();
     $sth = null;
 
@@ -234,7 +234,7 @@ class DB
   }
 
   // return id where $column is $value
-  public static function GetID(PDOExtension $pdo,string $table,string $column,mixed $value)
+  public static function GetID(PDOExtension $pdo,string $table,string $column,mixed $value) : mixed
   {
     $sth = 
       DB::CreateInstance($pdo)
@@ -264,21 +264,19 @@ class DB
     $sth = null;
   }
 
-
-
   /*-----------------------------------------------------------------------
     Instances
   -----------------------------------------------------------------------*/
-  protected $pdo;
-  protected $sql;
-  protected $filter;
-  protected $mode;
-  protected $sqlserver2008 = false;
+  protected PDOExtension $pdo;
+  protected array $sql;
+  protected Filter $filter;
+  protected string $mode = '';
+  protected bool $sqlserver2008 = false;
 
   public function __construct(PDOExtension $pdo,array $options = array())
   {
     $this->pdo = $pdo;
-    $this->sql = array();
+    $this->sql = [];
     if((($existsFilter = array_key_exists('filter',$options)) && false === $this->attachFilter($options['filter'])) || !$existsFilter)
       $this->filter = new Filter();
 
@@ -288,7 +286,7 @@ class DB
       $this->sqlserver2008 = static::$SQLSERVER_IS_2008;
   }
 
-  public function quoteColumns(string|array $column) : mixed
+  public function quoteColumns(mixed $column) : mixed
   {
     return $this->pdo->quoteColumns($column);
   }
@@ -301,14 +299,14 @@ class DB
     return $this->pdo->quote($str);
   }
 
-  public function getFilter() : mixed
+  public function getFilter() : Filter
   {
     return $this->filter;
   }
 
-  public function attachFilter(Filter $filter) : mixed
+  public function attachFilter(Filter $filter) : Filter|null
   {
-    $rv = $this->filter;
+    $rv = $this->filter ?? null;
     $this->filter = $filter;
 
     return $rv;
@@ -332,13 +330,14 @@ class DB
     return $this;
   }
 
-  // $columns =>  [ [column1,alias1],[column2,alias2],.... ]
+  // $columns =>  [ [column1,alias1],[column2,alias2],.... ] column is not quoted.
   public function columnsAs(array $columns) : DB
   {
+    $pdo = $this->pdo;
     $result = array();
     foreach($columns as $column)
       $result[] = is_array($column) && count($column) == 2 ? 
-                    sprintf('%s AS %s',$this->pdo->quoteColumns($column[0]),$column[1]) :
+                    sprintf('%s AS %s',$pdo->quoteColumns($column[0]),$column[1]) :
                     $this->pdo->quoteColumns($column[0]);
 
     $this->sql['columns'] = implode(',',$result);
@@ -347,31 +346,31 @@ class DB
 
   protected function appendColumn(string $column,bool $is_quoted = false) : DB
   {
-    if($is_quoted === false)
-      $column = $this->pdo->quoteColumns($column);
+    if(strlen($column) > 0)
+    {
+      if($is_quoted === false)
+        $column = $this->pdo->quoteColumns($column);
 
-    $this->sql['columns'] .= 
-      sprintf
-      (
-        '%s%s',
-        empty($this->sql['columns']) ? '' : ',',
-        $column
-      );
+      $columns = empty($this->sql['columns']) ? [] : [$this->sql['columns']];
+      $columns[] = $column;
+
+      $this->sql['columns'] = implode(',',$columns);
+    }
 
     return $this;
   }
   protected function prependColumn(string $column,bool $is_quoted = false) : DB
   {
-    if($is_quoted === false)
-      $column = $this->pdo->quoteColumns($column);
+    if(strlen($column) > 0)
+    {
+      if($is_quoted === false)
+        $column = $this->pdo->quoteColumns($column);
 
-    $this->sql['columns'] = 
-      sprintf
-      (
-        '%s%s',
-        $column,
-        empty($this->sql['columns']) ? '' : ','
-      ) . $this->sql['columns'];
+      $columns = empty($this->sql['columns']) ? [] : [$this->sql['columns']];
+      array_unshift($columns,$column);
+
+      $this->sql['columns'] = implode(',',$columns);
+    }
 
     return $this;
   }
@@ -386,7 +385,7 @@ class DB
     return $this;
   }
 
-  public function where($cond,$operator = 'AND') : DB
+  public function where(string|array $cond,$operator = 'AND') : DB
   {
     if(empty($cond))
       return $this;
@@ -515,7 +514,7 @@ class DB
   }
 
   //return statement handle
-  public function prepare() : bool|PDOStatement
+  public function prepare() : PDOStatement|false
   {
     $rv = false;
 
@@ -532,39 +531,40 @@ class DB
   }
 
   //return statement handle
-  public function query() : bool|PDOStatement
+  public function query() : PDOStatement|false
   {
     $rv = false;
 
     if(!$this->mode)
       throw new Exception(_('query mode is not defined'));
-    $invoke = '_' . $this->mode;
 
+    $invoke = '_' . $this->mode;
     if(method_exists($this,$invoke))
     {
-      $sql = call_user_func(array($this,$invoke));
+      $sql = $this->$invoke();
       $rv = $this->pdo->query(trim($sql));
     }
     return $rv;
   }
 
-  public function exec() : mixed
+  public function exec() : int|false
   {
     $rv = false;
 
     if(!$this->mode)
       throw new Exception(_('exec mode is not defined'));
-    $invoke = '_' . $this->mode;
 
+    $invoke = '_' . $this->mode;
     if(method_exists($this,$invoke))
     {
-      $sql = call_user_func(array($this,$invoke));
+      $sql = $this->$invoke();
       $rv = $this->pdo->exec(trim($sql));
     }
+
     return $rv;
   }
 
-  public function queryAndFetchAll(int $method = PDO::FETCH_BOTH) : mixed
+  public function queryAndFetchAll(int $method = PDO::FETCH_BOTH) : array|false
   {
     $rv = false;
     $pdo = $this->pdo;
@@ -579,17 +579,20 @@ class DB
     $rv = false;
     if(!$this->mode)
       throw new Exception(_('query mode is not defined'));
+
     $invoke = '_' . $this->mode;
-
     if(method_exists($this,$invoke))
-      $rv = call_user_func(array($this,$invoke));
+    {
+      $sql = $this->$invoke();
+      $rv = trim($sql);
+    }
 
-    return trim($rv);
+    return $rv;
   }
 
   // Select
   // ------------------------------------------------------------------
-  protected function _join(string $table,mixed $condition,$which = 'INNER') : DB
+  protected function _join(string $table,mixed $condition,string $which = 'INNER') : DB
   {
     $pdo = $this->pdo;
     if(!array_key_exists('join',$this->sql) || empty($this->sql['join']))
@@ -734,6 +737,7 @@ class DB
     $this->sql['from'][] = $from;
     return $this;
   }
+
   public function fromAs(DB $db,string $alias) : DB
   {
     $query = $db->select()->getQuery();
@@ -773,11 +777,11 @@ class DB
     return $this->_joinWithId($table,$column1,$column2,'RIGHT');
   }
 
-  public function orderby(string $orderby,?int $sqlsrv_num = null,?int $sqlsrv_offset = null) : DB
+  public function orderby(string $orderby,?int $sqlsrv_num = 0,?int $sqlsrv_offset = 0) : DB
   {
     $pdo = $this->pdo;
     if(!array_key_exists('orderby',$this->sql) || !is_array($this->sql['orderby']))
-      $this->sql['orderby'] = array();
+      $this->sql['orderby'] = [];
 
     if($sqlsrv_offset > 0 && $sqlsrv_num > 0)
       $this->sql['fetch-row'] = sprintf(' OFFSET %d ROWS FETCH NEXT %d ROWS ONLY',$sqlsrv_offset,$sqlsrv_num);
@@ -826,11 +830,13 @@ class DB
 
   public function limit(int $num,int $offset) : DB
   {
-    $this->sql['limit'] = array('num' => $num,'offset' => $offset);
+    if($num > 0)
+      $this->sql['limit'] = ['num' => $num,'offset' => $offset];
+
     return $this;
   }
 
-  public function slice(int $offset,int $num = 0) : bool|PDOExtension
+  public function slice(int $offset,int $num = 0) : mixed
   {
     if(++$offset <= 0)
       throw new Exception(_('offset is greater than 0'));
@@ -989,7 +995,7 @@ class DB
     return $this;
   }
 
-  protected function _update()
+  protected function _update() : string
   {
     $statement = array('UPDATE');
     if(!array_key_exists('table',$this->sql))
@@ -1023,7 +1029,7 @@ class DB
   public function set(string $column,mixed $value,bool $is_column_quoted = false) : DB
   {
     if(!array_key_exists('set',$this->sql) || !is_array($this->sql['set']))
-      $this->sql['set'] = array();
+      $this->sql['set'] = [];
 
     if($is_column_quoted === false)
       $column = $this->pdo->quoteColumns($column);
@@ -1032,9 +1038,9 @@ class DB
     return $this;
   }
 
-  public function sets(array $columnvalue,bool $is_column_quoted = false) : DB
+  public function sets(array $cv,bool $is_column_quoted = false) : DB
   {
-    foreach($columnvalue as $c_ => $v_)
+    foreach($cv as $c_ => $v_)
       $this->set($c_,$v_,$is_column_quoted);
 
     return $this;
@@ -1079,13 +1085,15 @@ class DB
   
   protected  function _procedure() : mixed
   {
-    if(!array_key_exists('procedure',$this->sql) || empty($this->sql['procedure']))
+    $pdo = $this->pdo;
+    $methodname = 'procedure';
+    if(!array_key_exists($methodname,$this->sql) || empty($this->sql[$methodname]))
       throw new Exception(_('procedure was empty'));
 
-    if(!method_exists($this->pdo,'procedure'))
+    if(!method_exists($pdo,$methodname))
       throw new RuntimeException(_('procedure method not implement yet'));
-
-    return $this->pdo->procedure($this->sql['procedure']->name,$this->sql['procedure']->arguments);
+    
+    return $pdo->$methodname($this->sql['procedure']->name,$this->sql['procedure']->arguments);
   }
 
   // get status SQLSERVER2008
