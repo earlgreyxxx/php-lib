@@ -54,7 +54,7 @@ class DatabaseRows extends DatabaseTable implements Iterator,ArrayAccess,Countab
     );
   }
 
-  private $condition;
+  private $condition = '';
   public function getCondition()
   {
     return $this->condition;

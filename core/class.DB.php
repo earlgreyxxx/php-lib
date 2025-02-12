@@ -385,7 +385,7 @@ class DB
     return $this;
   }
 
-  public function where(string|array $cond,$operator = 'AND') : DB
+  public function where(mixed $cond,string $operator = 'AND') : DB
   {
     if(empty($cond))
       return $this;
@@ -916,7 +916,7 @@ class DB
     $values = $this->sql['values'];
     if(is_string($values))
     {
-      
+      $statement[] = $values;
     }
     else if(is_array($values))
     {
