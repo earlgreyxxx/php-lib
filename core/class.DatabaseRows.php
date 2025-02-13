@@ -54,7 +54,7 @@ class DatabaseRows extends DatabaseTable implements Iterator,ArrayAccess,Countab
     );
   }
 
-  private $condition;
+  private $condition = '';
   public function getCondition()
   {
     return $this->condition;
@@ -184,8 +184,8 @@ class DatabaseRows extends DatabaseTable implements Iterator,ArrayAccess,Countab
    * abstract public offsetSet ( mixed $offset , mixed $value ) : void
    * abstract public offsetUnset ( mixed $offset ) : void
   ***************************************************************/
-  #[\ReturnTypeWillChange]
-  public function offsetExists($offset)
+  
+  public function offsetExists($offset) : bool
   {
     $pdo = $this->getHandle();
     $condition = sprintf(
@@ -193,11 +193,10 @@ class DatabaseRows extends DatabaseTable implements Iterator,ArrayAccess,Countab
       $pdo->quoteColumns($this->getIdColumn()),
       is_int($offset) ? $offset : $pdo->quote($offset)
     );
-    return 0 < DB::Count($pdo,$this->getTable(),'*',$condtion);
+    return 0 < DB::Count($pdo,$this->getTable(),'*',$condition);
   }
 
-  #[\ReturnTypeWillChange]
-  public function offsetGet($offset)
+  public function offsetGet($offset) : mixed
   {
     $pdo = $this->getHandle();
     $rv = false;
@@ -222,14 +221,12 @@ class DatabaseRows extends DatabaseTable implements Iterator,ArrayAccess,Countab
     return $rv;
   }
   
-  #[\ReturnTypeWillChange]
-  public function offsetSet($offset,$value)
+  public function offsetSet($offset,$value) : void
   {
     throw new RuntimeException(_('can not set to this object'));
   }
 
-  #[\ReturnTypeWillChange]
-  public function offsetUnset($offset)
+  public function offsetUnset($offset) : void
   {
     $row = $this->offsetGet($offset);
     $row->delete();
@@ -240,7 +237,7 @@ class DatabaseRows extends DatabaseTable implements Iterator,ArrayAccess,Countab
    * implement Iterator interface
    *
    * abstract public current ( void ) : mixed
-   * abstract public key ( void ) : scalar
+   * abstract public key ( void ) : mixed
    * abstract public next ( void ) : void
    * abstract public rewind ( void ) : void
    * abstract public valid ( void ) : bool
@@ -265,8 +262,7 @@ class DatabaseRows extends DatabaseTable implements Iterator,ArrayAccess,Countab
     return $rv;
   }
 
-  #[\ReturnTypeWillChange]
-  public function current()
+  public function current() : mixed
   {
     if($this->returnStdObject)
       return $this->row;
@@ -275,8 +271,7 @@ class DatabaseRows extends DatabaseTable implements Iterator,ArrayAccess,Countab
     return call_user_func($makeInstance,$this->row);
   }
 
-  #[\ReturnTypeWillChange]
-  public function key()
+  public function key() : mixed
   {
     $idColumn = $this->getIdColumn();
     return $this->row->$idColumn;

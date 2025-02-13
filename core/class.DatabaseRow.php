@@ -147,7 +147,7 @@ class DatabaseRow extends DatabaseTable
     return $obj;
   }
 
-  protected function insert()
+  protected function insert() : string|false
   {
     $pdo = $this->getHandle();
     $table = $this->getTable();
@@ -179,7 +179,7 @@ class DatabaseRow extends DatabaseTable
     return $pdo->lastInsertId();
   }
 
-  protected function update(?array $columns = null)
+  protected function update(?array $columns = null) : bool
   {
     $pdo = $this->getHandle();
     $table = $this->getTable();
@@ -234,7 +234,7 @@ class DatabaseRow extends DatabaseTable
     return $this->_imp_load_from_uniq($this->getIdColumn(),$id);
   }
 
-  protected function _imp_load_from_uniq(string $uniq_columnname,$value) : bool
+  protected function _imp_load_from_uniq(string $uniq_columnname,mixed $value) : bool
   {
     $pdo = $this->getHandle();
     
@@ -326,7 +326,7 @@ class DatabaseRow extends DatabaseTable
   }
 
   // fetch from db
-  public function fetch(array $conditions)
+  public function fetch(array $conditions) : bool
   {
     return $this->_imp_load_with_conditions($conditions);
   }
@@ -342,7 +342,7 @@ class DatabaseRow extends DatabaseTable
   }
 
   // update to db
-  public function save(?array $columns = null)
+  public function save(?array $columns = null) : int|bool
   {
     $id = $this->getIdColumn();
     if($columns === null)
@@ -367,7 +367,7 @@ class DatabaseRow extends DatabaseTable
     return $rv;
   }
 
-  public function delete()
+  public function delete() : bool
   {
     $pdo = $this->getHandle();
     $table = $this->getTable();
@@ -398,7 +398,7 @@ class DatabaseRow extends DatabaseTable
     return $rv;
   }
 
-  public function fill(string $uniq_column,$value) : bool
+  public function fill(string $uniq_column,mixed $value) : bool
   {
     if(empty($uniq_column) || empty($value))
       return false;
@@ -406,7 +406,7 @@ class DatabaseRow extends DatabaseTable
     return $this->_imp_load_from_uniq($uniq_column,$value);
   }
 
-  public function toFormData()
+  public function toFormData() : array|false
   {
     $obj = $this->get();
     if(false !== $obj)
@@ -415,7 +415,7 @@ class DatabaseRow extends DatabaseTable
     return $obj;
   }
 
-  public function toJson($callback = '')
+  public function toJson($callback = '') : string
   {
     $obj = $this->get();
     $rv = json_encode((array)$obj,JSON_PRETTY_PRINT);
@@ -423,14 +423,14 @@ class DatabaseRow extends DatabaseTable
   }
 
   // implemet __get/__set/__isset/__unset
-  public function __get($name)
+  public function __get($name) : mixed
   {
     $obj = $this->get();
     return $obj->{$name};
   }
 
   protected $columnChanged = [];
-  public function __set($name,$value)
+  public function __set($name,$value) : void
   {
     $obj = $this->get();
     if(property_exists($obj,$name))
@@ -449,13 +449,13 @@ class DatabaseRow extends DatabaseTable
     }
   }
 
-  public function __isset($name)
+  public function __isset($name) : bool
   {
     $obj = $this->get();
     return property_exists($obj,$name) && $obj->{$name} !== NULL;
   }
 
-  public function __unset($name)
+  public function __unset($name) : void
   {
     throw new RuntimeException(_('can not unset property'));
   }
