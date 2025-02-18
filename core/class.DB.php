@@ -174,7 +174,7 @@ class DB
 
   // helper for COUNT($column) returns integer or PDOStatement instance when is_prepared was true
   // $conditions is array or string, pass to where method directly
-  public static function Count(PDOExtension $pdo,string $table,string $count_column = '*',string|array $conditions = null,bool $is_prepared = false) : mixed
+  public static function Count(PDOExtension $pdo,string $table,string $count_column = '*',string|array|null $conditions = null,bool $is_prepared = false) : mixed
   {
     if(!$pdo->exists($table))
       throw new RuntimeException(_('table not exists'));
@@ -202,7 +202,7 @@ class DB
     return $cnt;
   }
 
-  public static function DistinctCount(PDOExtension $pdo,string $table,string $count_column,string|array $conditions = null,bool $is_prepared = false) : mixed
+  public static function DistinctCount(PDOExtension $pdo,string $table,string $count_column,string|array|null $conditions = null,bool $is_prepared = false) : mixed
   {
     if(!$pdo->exists($table))
       throw new RuntimeException(_('table not exists'));
