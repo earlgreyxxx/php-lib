@@ -234,6 +234,9 @@ abstract class KeyValueCollection implements ArrayAccess
   protected function kv_get($k,$v,array $options)
     {
       $rv = '';
+      if(!$this->kv)
+        return $rv;
+
       if(is_array($k))
         {
           $rv = array();
