@@ -114,7 +114,7 @@ class Session extends KeyValueCollection
         $this->arguments['secure'] = $params['secure'];
       if(isset($params['httponly']) && is_bool($params['httponly']))
         $this->arguments['httponly'] = $params['httponly'];
-      if(isset($params['samesite']) && is_bool($params['samesite']))
+      if(isset($params['samesite']) && ($params['samesite'] === 'none' || $params['samesite'] === 'lax' || $params['samesite'] === 'strict'))
         $this->arguments['samesite'] = $params['samesite'];
 
       call_user_func('session_set_cookie_params',$this->arguments);
