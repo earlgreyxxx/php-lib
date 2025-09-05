@@ -191,7 +191,6 @@ __SQL_STATEMENT__;
     $rv = false;
     if(!empty($table))
     {
-      $dbname = $m[1];
       $sql = sprintf('SELECT modify_date FROM sys.objects WHERE type_desc=%s and object_id = object_id(%s)',
         $this->quote('USER_TABLE'),
         $this->quote($table));
