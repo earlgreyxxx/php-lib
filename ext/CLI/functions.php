@@ -98,7 +98,7 @@ function confirm(string $prompt,string $addition = ' .... is it OK?(y/N)') : boo
 // ----------------------------------------------------------------------------------
 function tputcols() : int
 {
-  $cols = `/usr/bin/env tput cols`;
+  $cols = shell_exec('/usr/bin/env tput cols');
   return intval($cols);
 }
 
@@ -106,13 +106,13 @@ function tputcols() : int
 // ----------------------------------------------------------------------------------
 function tputlines() : int
 {
-  $lines = `/usr/bin/env tput lines`;
+  $lines = shell_exec('/usr/bin/env tput lines');
   return intval($lines);
 }
 
 function tputsize() : array
 {
-  list($lines,$cols) = preg_split('/\s+/',`/usr/bin/env stty size`);
+  list($lines,$cols) = preg_split('/\s+/',shell_exec('/usr/bin/env stty size'));
   return [intval($lines),intval($cols),'lines' => intval($lines),'cols' => intval($cols)];
 }
 
