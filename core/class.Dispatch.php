@@ -10,7 +10,7 @@
 abstract class Dispatch extends Controller
 {
   //Constructor
-  public function __construct(array $define = array())
+  public function __construct(array $define = [])
     {
       if(isset($define['primary']) && !empty($define['primary']))
         $this->primary = $define['primary'];
@@ -30,81 +30,81 @@ abstract class Dispatch extends Controller
       $this->init();
     }
 
-  private $primary = 'mode';
-  private $secondary = 'action';
+  private string $primary = 'mode';
+  private string $secondary = 'action';
 
   // parameters
-  protected $r = null;
-  protected $f = null;
-  protected $p = null;
-  protected $g = null;
+  protected ?array $r = null;
+  protected ?array $f = null;
+  protected ?array $p = null;
+  protected ?array $g = null;
 
   // default method when that can not be spcified call method
-  protected function __default()
-    {
-      //メソッドが特定されない場合は、エラー出力
-      echo 'Default method is now called.';
-      return false;
-    }
+  protected function __default() : false
+  {
+    //メソッドが特定されない場合は、エラー出力
+    echo 'Default method is now called.';
+    return false;
+  }
 
-  private function decide()
-    {
-      $rv = false;
-      $r = $this->r;
+  private function decide() : string
+  {
+    $rv = false;
+    $r = $this->r;
 
-      if(array_key_exists($this->primary,$r))
-        $prm = preg_replace('/\W+/','',$r[$this->primary]);
-      if(array_key_exists($this->secondary,$r))
-        $sec = preg_replace('/\W+/','',$r[$this->secondary]);
+    if (array_key_exists($this->primary, $r))
+      $prm = preg_replace('/\W+/', '', $r[$this->primary]);
+    if (array_key_exists($this->secondary, $r))
+      $sec = preg_replace('/\W+/', '', $r[$this->secondary]);
 
-      if(empty($prm))
-        {
-          $rv = '__default';
-        }
-      else
-        {
-          $rv = $prm;
-          if(!empty($sec))
-            $rv = $prm.'_'.$sec;
+    if (empty($prm))
+    {
+      $rv = '__default';
+    }
+    else
+    {
+      $rv = $prm;
+      if (!empty($sec))
+        $rv = $prm . '_' . $sec;
 
-          $rv = "do_$rv";
-        }
-      return $rv;
+      $rv = "do_$rv";
     }
+    return $rv;
+  }
 
-  protected function requestExists($name)
-    {
-      return array_key_exists($name,$this->r);
-    }
-  protected function postExists($name)
-    {
-      return array_key_exists($name,$this->p);
-    }
-  protected function getExists($name)
-    {
-      return array_key_exists($name,$this->g);
-    }
-  protected function filesExists($name)
-    {
-      return array_key_exists($name,$this->f);
-    }
+  protected function requestExists(string $name) : bool
+  {
+    return array_key_exists($name, $this->r);
+  }
+  protected function postExists(string $name) : bool
+  {
+    return array_key_exists($name, $this->p);
+  }
+  protected function getExists(string $name) : bool
+  {
+    return array_key_exists($name, $this->g);
+  }
+  protected function filesExists(string $name) : bool
+  {
+    return array_key_exists($name, $this->f);
+  }
 
   // public method
-  public function invoke()
+  public function invoke() : mixed
+  {
+    $rv = true;
+    if (($method = $this->decide()) && method_exists($this, $method))
+      $rv = call_user_func(array($this, $method));
+    else
+      throw new Exception(_('Dispatcher can not determine method to process request!'));
+
+    if ($rv !== false)
     {
-      $rv = true;
-      if(($method = $this->decide()) && method_exists($this,$method))
-        $rv = call_user_func(array($this,$method));
-      else
-        throw new Exception(_('Dispatcher can not determine method to process request!'));
-
-      if($rv !== false)
-        {
-          if($view = $this->getView())
-            $view->render();
-        }
-
-      return $rv;
+      if ($view = $this->getView())
+        $view->render();
     }
+
+    return $rv;
+  }
 }
 

@@ -36,30 +36,28 @@ class Session extends KeyValueCollection
   // --------------------------------------------------------------------------
 
   //セッションが始まっているか？
-  private static $is_start = false;
+  private static bool $is_start = false;
 
   // Instances
   // --------------------------------------------------------------------------
 
   //このセッションを継続するか？
-  private $status = true;
+  private bool $status = true;
 
-  protected function getStatus()
+  protected function getStatus() : bool
   {
     return $this->status;
   }
-  protected function setStatus($status)
+  protected function setStatus(bool $status) : static
   {
-    if(is_bool($status))
-      $this->status = $status;
-
+    $this->status = $status;
     return $this;
   }
 
-  protected $arguments;
+  protected ?array $arguments;
 
   // constructor
-  protected function __construct($name,$params = array())
+  protected function __construct(string $name,array $params = [])
   {
     if(!empty($name))
       session_name($name);
@@ -69,7 +67,7 @@ class Session extends KeyValueCollection
     $this->init($params);
   }
 
-  private function init($params)
+  private function init(array $params) : void
   {
     if(isset($params['savepath']) && !empty($params['savepath']))
     {
@@ -129,7 +127,7 @@ class Session extends KeyValueCollection
     }
   }
 
-  public function start($container = null)
+  public function start($container = null) : void
   {
     if($this->is() == false)
     {
@@ -140,9 +138,9 @@ class Session extends KeyValueCollection
     }
   }
 
-  protected function is($is_start = null)
+  protected function is(?bool $is_start = null) : bool|static
   {
-    if(is_bool($is_start))
+    if(!is_null($is_start))
     {
       self::$is_start = $is_start;
       return $this;
@@ -151,18 +149,18 @@ class Session extends KeyValueCollection
     return self::$is_start;
   }
 
-  public function renew($is_delete = true)
+  public function renew(bool $is_delete = true) : void
   {
     session_regenerate_id($is_delete);
   }
 
-  public function end()
+  public function end() : void
   {
     session_write_close();
     $this->is(false);
   }
 
-  public function update()
+  public function update() : static
   {
     if(true === $this->getStatus())
     {
@@ -186,7 +184,7 @@ class Session extends KeyValueCollection
     return $this; 
   }
 
-  public function destroy($call_destroy = true)
+  public function destroy(bool $call_destroy = true) : void
   {
     if($this->is())
     {
@@ -211,7 +209,7 @@ class Session extends KeyValueCollection
     }
   }
 
-  public function block($immediately = false)
+  public function block(bool $immediately = false) : static
   {
     $this->setStatus(false);
     if($immediately === true)

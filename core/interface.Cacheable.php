@@ -8,12 +8,12 @@
 interface Cacheable
 {
   public function getCacheType();
-  public function getTTL();
-  public function setTTL($sec);
-  public function getCacheKeyPrefix();
-  public function setCacheKeyPrefix($prefix_str);
+  public function getTTL() : int;
+  public function setTTL(int $sec) : void;
+  public function getCacheKeyPrefix() : string;
+  public function setCacheKeyPrefix(string $prefix_str) : void;
   public function cacheStore(array $data);
-  public function cacheFetch();
-  public function cacheClear();
-  public function cacheExists();
+  public function cacheFetch() : mixed;
+  public function cacheClear() : mixed;
+  public function cacheExists() : bool;
 }

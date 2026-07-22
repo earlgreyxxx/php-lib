@@ -7,9 +7,9 @@
 *******************************************************************************/
 interface CacheableCollection
 {
-  public function getCache();
-  public function setCache(KeyValueCollection $instance);
-  public function clearCache();
-  public function getTTL();
-  public function setTTL($value);
+  public function getCache() : ApcuCache;
+  public function setCache(KeyValueCollection $instance) : void;
+  public function clearCache() : void;
+  public function getTTL() : int;
+  public function setTTL(int $value) : static;
 }

@@ -12,10 +12,10 @@ class DatabaseRows extends DatabaseTable implements Iterator,ArrayAccess,Countab
 {
   // Statics
   // -----------------------------------------------------------------------
-  public static function CreateWithDSN($table,$dsn,$user = '',$passwd = '',array $options = [])
+  public static function CreateWithDSN(string $table,string $dsn,string $user = '',string $passwd = '',array $options = []) : static
   {
     $pdoex = GetPdoInstance($dsn,$user,$passwd,$options);
-    return new self($pdoex,$table);
+    return new static($pdoex,$table);
   }
 
   // Instances
@@ -23,7 +23,7 @@ class DatabaseRows extends DatabaseTable implements Iterator,ArrayAccess,Countab
 
   // constructor
   // settings = ['row-class' => row class factory closure, 'condition' => select condition ]
-  public function __construct($pdo,$table,array $settings = [])
+  public function __construct(PDOExtension $pdo,string $table,array $settings = [])
   {
     parent::__construct($pdo,$table);
 
@@ -47,49 +47,49 @@ class DatabaseRows extends DatabaseTable implements Iterator,ArrayAccess,Countab
     }
   }
 
-  protected function initialize()
+  protected function initialize() : void
   {
     $this->setDB(
       DB::CreateInstance($this->getHandle())->select()->from($this->getTable())
     );
   }
 
-  private $condition = '';
-  public function getCondition()
+  private string $condition = '';
+  public function getCondition() : string
   {
     return $this->condition;
   }
-  public function setCondition($condition)
+  public function setCondition(string $condition) : static
   {
     $this->condition = $condition;
     return $this;
   }
 
-  private $rowClass = null;
-  protected function getRowClass()
+  private ?callable $rowClass = null;
+  protected function getRowClass() : callable
   {
     if(!$this->rowClass)
-      $this->rowClass = function($param) {};
+      $this->rowClass = fn($param) => null;
 
     return $this->rowClass;
   }
-  protected function setRowClass(callable $makeInstance)
+  protected function setRowClass(callable $makeInstance) : static
   {
     $this->rowClass = $makeInstance;
     return $this;
   }
 
-  private $sth;
-  protected function getStatementHandle()
+  private ?PDOStatement $sth = null;
+  protected function getStatementHandle() : PDOStatement|false
   {
     return $this->sth === null ? false : $this->sth;
   }
-  protected function setStatementHandle(PDOStatement $sth)
+  protected function setStatementHandle(PDOStatement $sth) : static
   {
     $this->sth = $sth;
     return $this;
   }
-  protected function clearStatementHandle()
+  protected function clearStatementHandle() : static
   {
     if($this->sth)
     {
@@ -101,26 +101,26 @@ class DatabaseRows extends DatabaseTable implements Iterator,ArrayAccess,Countab
   }
 
   //
-  protected $row;
-  private $returnStdObject = true;
-  public function setReturnStdObject()
+  protected stdClass $row;
+  private bool $returnStdObject = true;
+  public function setReturnStdObject() : static
   {
     $this->returnStdObject = true;
     return $this;
   }
-  public function setReturnRowObject()
+  public function setReturnRowObject() : static
   {
     $this->returnStdObject = false;
     return $this;
   }
 
   // select => generator
-  protected function getEnumerator($conditions = null,int $limit = 0,int $offset = 0,?array $orderbies = null,?array $columns = null,$quotedColumn = false) : Generator
+  protected function getEnumerator(mixed $conditions = null,int $limit = 0,int $offset = 0,?array $orderbies = null,?array $columns = null,$quotedColumn = false) : Generator
   {
     return $this->createGenerator(true,$conditions, $limit,$offset,$orderbies,$columns,$quotedColumn);
   }
 
-  protected function getGenerator($conditions = null,int $limit = 0,int $offset = 0,?array $orderbies = null,?array $columns = null,$quotedColumn = false) : Generator
+  protected function getGenerator(mixed $conditions = null,int $limit = 0,int $offset = 0,?array $orderbies = null,?array $columns = null,$quotedColumn = false) : Generator
   {
     return $this->createGenerator(false,$conditions, $limit,$offset,$orderbies,$columns,$quotedColumn);
   }
@@ -170,7 +170,7 @@ class DatabaseRows extends DatabaseTable implements Iterator,ArrayAccess,Countab
   }
 
   // returns generator of all rows
-  public function rows()
+  public function rows() : Generator
   {
     return $this->getGenerator();
   }
@@ -185,7 +185,7 @@ class DatabaseRows extends DatabaseTable implements Iterator,ArrayAccess,Countab
    * abstract public offsetUnset ( mixed $offset ) : void
   ***************************************************************/
   
-  public function offsetExists($offset) : bool
+  public function offsetExists(mixed $offset) : bool
   {
     $pdo = $this->getHandle();
     $condition = sprintf(
@@ -196,7 +196,7 @@ class DatabaseRows extends DatabaseTable implements Iterator,ArrayAccess,Countab
     return 0 < DB::Count($pdo,$this->getTable(),'*',$condition);
   }
 
-  public function offsetGet($offset) : mixed
+  public function offsetGet(mixed $offset) : mixed
   {
     $pdo = $this->getHandle();
     $rv = false;
@@ -221,12 +221,12 @@ class DatabaseRows extends DatabaseTable implements Iterator,ArrayAccess,Countab
     return $rv;
   }
   
-  public function offsetSet($offset,$value) : void
+  public function offsetSet(mixed $offset,mixed $value) : void
   {
     throw new RuntimeException(_('can not set to this object'));
   }
 
-  public function offsetUnset($offset) : void
+  public function offsetUnset(mixed $offset) : void
   {
     $row = $this->offsetGet($offset);
     $row->delete();

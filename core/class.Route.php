@@ -1,5 +1,4 @@
-<?php //-*- mode: php; Encoding: utf8n -*-
-/*******************************************************************************
+<?php /*************************************************************************
 
  Router class
 
@@ -44,8 +43,8 @@
 
 class Route extends KeyValueCollection
 {
-  protected static $ROUTE_VALID_PATTERN = '![^\w_\-\./]+!';
-  private static function merge_requests(?array $input = null)
+  protected static string $ROUTE_VALID_PATTERN = '![^\w_\-\./]+!';
+  private static function merge_requests(?array $input = null) : void
   {
     if($input !== null)
     {
@@ -73,7 +72,7 @@ class Route extends KeyValueCollection
     }
   }
 
-  public static function GetInstance($param1,$options = array())
+  public static function GetInstance(string $param1,array $options = array()) : static
   {
     if(empty($param1))
       $param1 = '/';
@@ -84,18 +83,18 @@ class Route extends KeyValueCollection
   /*------------------------------------------------------------------------------
     Instance members.
   ------------------------------------------------------------------------------*/
-  private $appdir = '';
-  private $rewrite;
-  private $prefix;
-  private $current;
-  private $cache;
-  private $format;
-  private $regex;
-  private $option;
-  private $clear = false;
-  private $keyname;
+  private string $appdir = '';
+  private bool $rewrite = true;
+  private string $prefix = '';
+  private string $current = '';
+  private bool|string $cache = false;
+  private array $format = [];
+  private array $regex = [];
+  private array $option = [];
+  private bool $clear = false;
+  private string $keyname = 'enegize';
 
-  protected function export()
+  protected function export() : array
   {
     return [ 
       'path'   => var_export($this->get_container(),true),
@@ -105,7 +104,7 @@ class Route extends KeyValueCollection
     ];
   }
 
-  protected function import($pathes,$regexes,$formats,$options)
+  protected function import(array $pathes,array $regexes,array $formats,array $options) : void
   {
     $this->init_container($pathes);
     $this->regex = $regexes;
@@ -113,13 +112,13 @@ class Route extends KeyValueCollection
     $this->option = $options;
   }
 
-  protected function cacheApply()
+  protected function cacheApply() : void
   {
     if($this->cache && apcu_exists($this->cache))
       call_user_func_array([$this,'import'],apcu_fetch($this->cache,$result));
   }
 
-  protected function cacheStore()
+  protected function cacheStore() : bool
   {
     if(false !== $this->cache)
     {
@@ -148,13 +147,15 @@ class Route extends KeyValueCollection
     return false;
   }
 
-  private function invoke_controller($classname,$param1,$param2)
+  private function invoke_controller(string $classname,mixed $param1,mixed $param2)
   {
     $classname::Invoke($param1,$param2);
   }
 
-  private function invoke_dispatcher($dispatch)
+  private function invoke_dispatcher(array $dispatch) : void
   {
+    $callable = null;
+    $dispatch_params = null;
     if(count($dispatch) > 1)
     {
       list($callable,$dispatch_params) = $dispatch;
@@ -170,7 +171,8 @@ class Route extends KeyValueCollection
 
     call_user_func_array($callable,$dispatch_params);
   }
-  private function invoke_file($disp)
+
+  private function invoke_file(string $disp) : void
   {
     $prefix = '';
     if($disp[0] !== DIRECTORY_SEPARATOR)
@@ -179,7 +181,7 @@ class Route extends KeyValueCollection
     include_once($prefix . $disp);
   }
 
-  protected function match($uri)
+  protected function match(string $uri) : array|bool
   {
     $prefix = $this->prefix;
     if(!empty($prefix))
@@ -194,7 +196,7 @@ class Route extends KeyValueCollection
     return $m;
   }
 
-  protected function invoker($key)
+  protected function invoker(string $key) : ?bool
   {
     $err = '';
     if($key !== '/')
@@ -263,7 +265,6 @@ class Route extends KeyValueCollection
       }
     }
 
-
     if(php_sapi_name() === 'cli')
     {
       if(empty($err))
@@ -280,12 +281,13 @@ class Route extends KeyValueCollection
     $view->error404();  // call exit in method error404
 
     // no controll comes here...
+    return null;
   }
 
   // Constructor
-  public function __construct($prefix,array $options = array())
+  public function __construct(string $prefix,array $options = array())
   {
-    static $default = array('rewritable' => true,'keyname' => 'energize');
+    static $default = [ 'rewritable' => true,'keyname' => 'energize' ];
 
     $options = array_merge($default,$options);
     $this->prefix = rtrim($prefix,'/');
@@ -308,19 +310,20 @@ class Route extends KeyValueCollection
       $this->cacheStore();
   }
 
-  public function clearCache()
+  public function clearCache() : void
   {
     if($this->cache !== false && $this->hasCached())
       $this->clear = true;
   }
 
-  public function hasCached()
+  public function hasCached() : bool
   {
     return !empty($this->cache) && apcu_exists($this->cache);
   }
 
-  public function rewritable($b = null)
+  public function rewritable($b = null) : bool|self
   {
+    $rv = false;
     if($b === null)
     {
       $rv = $this->rewrite;
@@ -328,18 +331,18 @@ class Route extends KeyValueCollection
     else if(is_bool($b))
     {
       $this->rewrite = $b;
-      $rv =  $this;
+      $rv = $this;
     }
 
     return $rv;
   }
 
-  public function setPrefix($prefix)
+  public function setPrefix(string $prefix) : void
   {
     $this->prefix = rtrim($prefix,'/');
   }
 
-  public function getDispatcher($route)
+  public function getDispatcher(string $route) : mixed
   {
     $rv = false;
     if($this->exists($route))
@@ -348,11 +351,12 @@ class Route extends KeyValueCollection
     return $rv;
   }
 
-  protected function setPattern($route,$pattern)
+  protected function setPattern(string $route,string $pattern) : void
   {
     $this->regex[$route] = $pattern;
   }
-  public function getPattern($route)
+
+  public function getPattern(string $route) : string|false
   {
     $rv = false;
     if($route[0] !== '@')
@@ -363,11 +367,13 @@ class Route extends KeyValueCollection
 
     return $rv;
   }
-  protected function setFormat($route,$format)
+
+  protected function setFormat(string $route,string $format) : void
   {
     $this->format[$route] = $format;
   }
-  public function getFormat($route)
+
+  public function getFormat(string $route) : string|false
   {
     $rv = false;
     if($route[0] !== '@')
@@ -378,11 +384,13 @@ class Route extends KeyValueCollection
 
     return $rv;
   }
-  public function setOption($route,$option)
+
+  public function setOption(string $route, mixed $option) : void
   {
     $this->option[$route] = $option;
   }
-  public function getOption($route)
+
+  public function getOption(string $route) : mixed
   {
     if(array_key_exists($route,$this->option))
       return $this->option[$route];
@@ -390,12 +398,12 @@ class Route extends KeyValueCollection
     return null;
   }
 
-  public function current()
+  public function current() : string
   {
     return $this->current;
   }
 
-  public function adds(array $params)
+  public function adds(array $params) : self
   {
     foreach($params as $param)
     {
@@ -422,15 +430,16 @@ class Route extends KeyValueCollection
   }
 
   //add routing
-  public function add($path,$dispatcher,?array $option = null)
+  public function add(string $path,mixed $dispatcher,?array $option = null) : mixed
   {
     if($this->exists($path))
       return false;
 
     if(preg_match('!/\{.+\}/?!',$path))
     {
-      $regex = array();
-      $fmt = array();
+      $regex = [];
+      $fmt = [];
+      $keys = [];
       foreach(explode('/',$path) as $el)
       {
         if(!empty($el) && preg_match('/^\{(\w+)(?:@(.+?)\:\:(.+?))?\}$/',$el,$m))
@@ -459,7 +468,7 @@ class Route extends KeyValueCollection
       $re = implode('/',$regex);
       $fm = implode('/',$fmt);
 
-      $rv = $this->addre($ka,$re,$fm,$dispatcher,$option);
+      $rv = $this->addre($ka,$re,$fm,$dispatcher);
       $this->setOption('@' . $ka,$option);
     }
     else
@@ -470,14 +479,16 @@ class Route extends KeyValueCollection
 
     return $rv;
   }
-  protected function addstr($path,$dispatcher,$option = null)
+
+  protected function addstr(string $path,mixed $dispatcher,?array $option = null) : mixed
   {
     if($this->exists($path))
       return false;
 
     return parent::set($path,$dispatcher);
   }
-  protected function addre($key,$path_re,$path_format,$dispatcher)
+
+  protected function addre(string $key,string $path_re,string $path_format,mixed $dispatcher) : mixed
   {
     $key = '@' . $key;
     if($this->exists($key))
@@ -488,7 +499,7 @@ class Route extends KeyValueCollection
     return parent::set($key,$dispatcher);
   }
 
-  public function run($keyname)
+  public function run(string $keyname) : bool
   {
     $keyname = preg_replace(static::$ROUTE_VALID_PATTERN,'',$keyname ?? '');
     if(!empty($keyname))
@@ -501,19 +512,20 @@ class Route extends KeyValueCollection
   }
 
   //read front end php file or invoke function...
-  public function invoke($request_uri = '')
+  public function invoke(string $request_uri = '') : ?bool
   {
     if($this->rewrite)
     {
       $request_path = preg_replace(static::$ROUTE_VALID_PATTERN,'',get_request_path($request_uri));
-      if(false !== ($match = $this->match($request_path)))
+      $match = $this->match($request_path);
+      if(false !== $match)
         return $this->run($match[1]);
     }
     else
     {
       $r = get_request();
       if(true === $this->run($r[$this->keyname] ?? ''))
-        return;
+        return null;
     }
 
     $redirect_url = get_base_url() . '/';
@@ -525,10 +537,12 @@ class Route extends KeyValueCollection
         $redirect_url = $redirect_url . '?' . http_build_query($g);
     }
     header('Location: ' . $redirect_url);
+
+    return null;
   }
 
   //set new dispatcher and returns old dispatcher.
-  public function set($route,$dispatcher = null,$options = [])
+  public function set(int|string|array $route,mixed $dispatcher = null,mixed $options = []) : mixed
   {
     if($dispatcher === null || !is_callable($dispatcher) || !$this->exists($route))
       return false;
@@ -536,16 +550,17 @@ class Route extends KeyValueCollection
     return parent::set($route,$dispatcher,$options);
   }
 
-  public function getre($route,$params = array(),$suffix = false)
-  {
-    throw new Exception(_('Can not call this: ').__METHOD__);
-  }
-  public function get($k,$options = null)
+  public function getre(string $route,array $params = [],bool $suffix = false) : void
   {
     throw new Exception(_('Can not call this: ').__METHOD__);
   }
 
-  public function getFullPath($route = null,?array $params = null,$suffix = false)
+  public function get(int|string $k,mixed $options = null) : mixed
+  {
+    throw new Exception(_('Can not call this: ').__METHOD__);
+  }
+
+  public function getFullPath(?string $route = null,?array $params = null,bool $suffix = false) : string
   {
     $query_string = '';
     if(is_string($suffix))
@@ -556,13 +571,13 @@ class Route extends KeyValueCollection
     return $this->prefix . $this->getPath($route,$params,$suffix) . $query_string;
   }
 
-  public function getPath($route = null,?array $params = null,$suffix = false)
+  public function getPath(?string $route = null,?array $params = null,bool $suffix = false) : string
   {
     if(empty($route))
       $route = $this->current();
 
     if($params === null)
-      $params = array();
+      $params = [];
 
     $rv = '/';
     if($this->exists($route))
@@ -582,7 +597,7 @@ class Route extends KeyValueCollection
   }
 
   // getPath implementation
-  private function getPathImp($route,$suffix = false)
+  private function getPathImp(string $route,bool $suffix = false) : string
   {
     $rv = $route;
     if(!$this->rewrite)
@@ -609,7 +624,7 @@ class Route extends KeyValueCollection
     return $rv;
   }
 
-  public function getKeyname()
+  public function getKeyname() : string
   {
     return $this->keyname;
   }

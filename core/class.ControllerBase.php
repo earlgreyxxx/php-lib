@@ -10,7 +10,7 @@ abstract class ControllerBase extends Controller
 {
   // Statics...
   // ------------------------------------------------------------------------------
-  public static function Invoke($method,$params)
+  public static function Invoke(string $method,array $params) : void
   {
     try {
       $inst = new static();
@@ -34,31 +34,31 @@ abstract class ControllerBase extends Controller
   // ------------------------------------------------------------------------------
 
   // view & model
-  protected $view;
-  protected $model;
+  protected ViewBase $view;
+  protected mixed $model;
 
   // base model implementation
-  protected function createModel()
+  protected function createModel() : mixed
   {
     return null;
   }
 
-  protected function getModel()
+  protected function getModel() : mixed
   {
     return $this->model;
   }
 
-  protected function createView()
+  protected function createView() : ViewBase
   {
-    return null;
+    throw new RuntimeException(_('not implement yet'));
   }
 
-  protected function getView()
+  protected function getView() : ViewBase
   {
     return $this->view;
   }
 
-  protected function init()
+  protected function init() : void
   {
     $this->view = $this->createView();
     $this->model = $this->createModel();

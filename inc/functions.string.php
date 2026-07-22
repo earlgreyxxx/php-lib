@@ -10,7 +10,7 @@
 /*------------------------------------------------------------------------------
   shortcut of "echo _();"
 ------------------------------------------------------------------------------*/
-function __($text)
+function __(string $text) : void
 {
   echo _($text);
 }
@@ -18,19 +18,19 @@ function __($text)
 /*------------------------------------------------------------------------------
  サニタイズ
 ------------------------------------------------------------------------------*/
-function htmlspecialchars_utf8($src)
+function htmlspecialchars_utf8(?string $src) : string
 {
   return htmlspecialchars($src ?? '',ENT_QUOTES,'UTF-8');
 }
-function str_sanitize($src)
+function str_sanitize(?string $src) : string
 {
   return htmlspecialchars_utf8($src);
 }
-function str_sanitize_decode($src)
+function str_sanitize_decode(?string $src) : string
 {
   return htmlspecialchars_decode($src ?? '',ENT_QUOTES);
 }
-function str_sanitize_html($html,$tags = array('script','object'))
+function str_sanitize_html(?string $html,array $tags = ['script','object']) : string
 {
   $rv = '';
   if(!is_array($tags) && is_string($tags))
@@ -48,14 +48,17 @@ function str_sanitize_html($html,$tags = array('script','object'))
 }
 
 // 引用符・二重引用符にバックスラッシュを付加またはデコードします。
-function str_quotes($str)
+function str_quotes(?string $str) : string
 {
+  if($str === null)
+    return '';
+
   static $from = array('\'','"');
   static $to   = array("\\'","\\\"");
 
   return str_replace($from,$to,$str);
 }
-function str_quotes_decode($str)
+function str_quotes_decode(string $str) : string
 {
   static $from   = array("\\'","\\\"");
   static $to = array('\'','"');
@@ -64,48 +67,54 @@ function str_quotes_decode($str)
 }
 
 // 英数字、ピリオド以外は除去
-function str_remove($str,$pattern = '[^\w\.]')
+function str_remove(string $str,string $pattern = '[^\w\.]') : string
 {
   $regstr = sprintf('/%s/',$pattern);
   return preg_replace($regstr,'',$str);
 }
 
 // 数字以外は除去
-function str_numeric($str)
+function str_numeric(string $str) : string
 {
   return str_remove($str,'[^0-9]');
 }
 
-function intval_not_empty($str)
+function intval_not_empty(?string $str) : ?int
 {
   return empty($str) ? null : intval($str);
 }
 
-function intval_not_null($str)
+function intval_not_null(?string $str) : ?int
 {
   return $str === null ? null : intval($str);
 }
 
-function nullval_if_empty($str)
+function nullval_if_empty(?string $str) : ?string
 {
   return empty($str) ? null : $str;
 }
 
-function nullval_if_not_date($str)
+function nullval_if_not_date(?string $str) : ?string
 {
   $str = str_replace('/','-',$str);
   return preg_match('/^\d{4}-\d{2}-\d{2}$/',$str) && intval(strtotime($str)) > 0 ? $str : null;
 }
-function nullval_if_not_phone($str)
+function nullval_if_not_phone(?string $str) : ?string
 {
+  if($str === null)
+    $str = '';
   return preg_match('/^(?:\d{1,4}-)+?\d{1,4}$/',$str) ? $str : null;
 }
-function nullval_if_not_zipcode($str)
+function nullval_if_not_zipcode(?string $str) : ?string
 {
+  if($str === null)
+    $str = '';
   return preg_match('/^\d{3}-?\d{4}$/',$str) ? $str : null;
 }
-function nullval_if_not_email($str)
+function nullval_if_not_email(string $str) : ?string
 {
+  if($str === null)
+    $str = '';
   return validate_email($str) ? $str : null;
 }
 
@@ -113,7 +122,7 @@ function nullval_if_not_email($str)
   郵便番号のバリデーション (数字とハイフン以外を除去 及び 半角化)
   $has_hypen : ハイフンを保持する？ $len : 文字数制限値
 ------------------------------------------------------------------------------*/
-function str_correct_zipcode($str,$has_hyphen = true,$len = 8)
+function str_correct_zipcode(string $str,bool $has_hyphen = true,int $len = 8) : string
 {
   $rv = $str;
   $re = $has_hyphen ? '/[^\d\-]/' : '/[^\d]/';
@@ -138,32 +147,32 @@ function str_correct_zipcode($str,$has_hyphen = true,$len = 8)
   $float : 小数点以下何桁？
   $unit  : 単位文字列(1024^0,1024^1,1024^2,1024^3,....)
 ------------------------------------------------------------------------------*/
-function bytes($num,$float = 0,$unit = array('Byte','KB','MB','GB','TB','PB','EB'))
+function bytes(string $num,int $float = 0,array $unit = ['Byte','KB','MB','GB','TB','PB','EB']) : void
 {
   echo str_bytes($num,$float,$unit);
 }
 
-function str_bytes($num,$float = 0,$unit = array('Byte','KB','MB','GB','TB','PB','EB'))
+function str_bytes(string $num,int $float = 0,array $unit = ['Byte','KB','MB','GB','TB','PB','EB']) : string
 {
-  if(preg_match('/\D/',$num))
+  if (preg_match('/\D/', $num))
     return $num;
 
   $limit = count($unit) - 1;
   $i = 0;
-  while(strlen(floor($num)) > 3 && $i <= $limit)
-    {
-      $num = $num / 1024;
-      $i++;
-    }
+  while (strlen(floor($num)) > 3 && $i <= $limit)
+  {
+    $num = $num / 1024;
+    $i++;
+  }
 
-  $ar = explode('.',$num);
+  $ar = explode('.', $num);
   $add = '';
-  if($float > 0 && isset($ar[1]))
-    {
-      $ar[1] = substr($ar[1],0,$float);
-      if(intval($ar[1]) > 0)
-        $add = '.'.$ar[1];
-    }
+  if ($float > 0 && isset($ar[1]))
+  {
+    $ar[1] = substr($ar[1], 0, $float);
+    if (intval($ar[1]) > 0)
+      $add = '.' . $ar[1];
+  }
 
   return $ar[0] . $add . $unit[$i];
 }
@@ -171,57 +180,56 @@ function str_bytes($num,$float = 0,$unit = array('Byte','KB','MB','GB','TB','PB'
 /*------------------------------------------------------------------------------
   単位を展開する。
 ------------------------------------------------------------------------------*/
-function extract_unit_size($num_str)
+function extract_unit_size(string $num_str) : int|false
 {
   $rv = false;
-  static $unit_base = array( 'k' => 1,'m' => 2,'g' => 3,'t' => 3,'p' => 4,'e' => 5 );
+  static $unit_base = array('k' => 1, 'm' => 2, 'g' => 3, 't' => 3, 'p' => 4, 'e' => 5);
 
-  if(preg_match('/^(\-?\d+)([kmgtpe])$/i',$num_str,$m))
-    {
-      $num = $m[1];
-      $unit = strtolower($m[2]);
-      $times = 1;
+  if(preg_match('/^([\+\-]?\d+)(\.\d+)?([kmgte])b?$/i',$num_str,$m))
+  {
+    $num = floatval($m[1].$m[2]);
+    $unit = strtolower($m[3]);
 
-      $rv = $num * pow(1024,$unit_base[$unit]);
-    }
+    $rv = $num * pow(1024, $unit_base[$unit]);
+  }
 
-  return $rv;
+  return floor($rv);
 }
 
 /*------------------------------------------------------------------------------
   相対アドレスが混じったパスを正規のパスに変換する
   $limitは、パス区切り文字の位置に変換制限をかける。
 ------------------------------------------------------------------------------*/
-function sanitize_url($path,$limit = 1)
+function sanitize_url(string $path,int $limit = 1) : string
 {
-  $rva = array();
-  $names = preg_split(sprintf('/[%s]/',preg_quote('\/','/')),$path);
+  $rva = [];
+  $names = preg_split(sprintf('/[%s]/', preg_quote('\/', '/')), $path);
 
   $pos = 0;
-  foreach($names as $name_)
+  foreach ($names as $name_)
+  {
+    switch ($name_)
     {
-      switch($name_)
-        {
-        case '..':
-          if($pos > $limit)
-            unset($rva[$pos--]);
-          break;
+      case '..':
+        if ($pos > $limit)
+          unset($rva[$pos--]);
+        break;
 
-        case '.':
-          break;
+      case '.':
+        break;
 
-        default:
-          $rva[$pos++] = $name_;
-        }
+      default:
+        $rva[$pos++] = $name_;
     }
+  }
 
-  return implode('/',$rva);
+  return implode('/', $rva);
 }
 
 /*------------------------------------------------------------------------------
   $contentから$tagsで指定したHTMLタグをエスケープする
 ------------------------------------------------------------------------------*/
-function html_sanitize($tags,$html)
+function html_sanitize(array $tags,string $html) : string
 {
   if(empty($html))
     return '';
@@ -233,16 +241,16 @@ function html_sanitize($tags,$html)
 /*------------------------------------------------------------------------------
   メールアドレスの検査
 ------------------------------------------------------------------------------*/
-function validate_email($str,$is_enable_checkdns = false)
+function validate_email(string $str,bool $is_enable_checkdns = false) : bool
 {
   static $pattern = '/^([a-z0-9\+_\-]+)(\.[a-z0-9\+_\-]+)*@([a-z0-9\-]+\.)+[a-z]{2,6}$/iD';
 
   $rv = !empty($str) && preg_match($pattern, $str);
-  if($rv && $is_enable_checkdns)
-    {
-      list($username,$domain) = explode('@',$str,2);
-      $rv = (checkdnsrr($domain,'MX') || checkdnsrr($domain,'A') || checkdnsrr($domain,'NS'));
-    }
+  if ($rv && $is_enable_checkdns)
+  {
+    list($username, $domain) = explode('@', $str, 2);
+    $rv = (checkdnsrr($domain, 'MX') || checkdnsrr($domain, 'A') || checkdnsrr($domain, 'NS'));
+  }
 
   return $rv;
 }
@@ -251,28 +259,29 @@ function validate_email($str,$is_enable_checkdns = false)
   すでにそのファイル名が存在すれば、名前に番号を振った名前に変更する。
   その番号を返す。
 ------------------------------------------------------------------------------*/
-function exact_filename(&$basename,$dir = '.',$sep = '_')
+function exact_filename(string &$basename,string $dir = '.',string $sep = '_') : int
 {
   $count = 0;
 
-  if(file_exists(get_platform_filename("$dir/$basename")))
+  if (file_exists(get_platform_filename("$dir/$basename")))
+  {
+    $fmt = "%s$sep%d.%s";
+    $pinfo = pathinfo($basename);
+    if (!isset($pinfo['extension']))
+      $pinfo['extension'] = '';
+
+    $fmt = sprintf('%s%s%%d.%s', $pinfo['filename'], $sep, $pinfo['extension']);
+
+    do
     {
-      $fmt = "%s$sep%d.%s";
-      $pinfo = pathinfo($basename);
-      if(!isset($pinfo['extension']))
-        $pinfo['extension'] = '';
-
-      $fmt = sprintf('%s%s%%d.%s',$pinfo['filename'],$sep,$pinfo['extension']);
-
-      do {
-        $basename = sprintf($fmt,++$count);
-      } while(file_exists(get_platform_filename("$dir/$basename")));
-    }
+      $basename = sprintf($fmt, ++$count);
+    } while (file_exists(get_platform_filename("$dir/$basename")));
+  }
 
   return $count;
 }
 
-function get_exact_filename($basename,$dir = '.',$sep = '_')
+function get_exact_filename(string $basename,string $dir = '.',string $sep = '_') : string
 {
   exact_filename($basename,$dir,$sep);
   return $basename;
@@ -301,27 +310,32 @@ function get_exact_filename($basename,$dir = '.',$sep = '_')
  ※変換処理後の$formatにスカラリファレンスを渡すと $format 自体を変更します。
 
 ------------------------------------------------------------------------------*/
-function str_format()
+function str_format() : string
 {
   $params = func_get_args();
   $fmt = array_shift($params);
   if(count($params) == 1 && is_array($params[0]))
     $params = $params[0];
 
-  return vsprintf(preg_replace_callback('/\{(\d)(:[\w\+\-\. #]+?)?\}/',
-                                        function($m)
-                                        {
-                                          $order = intval($m[1]) + 1;
+  return vsprintf(
+    preg_replace_callback(
+      '/\{(\d)(:[\w\+\-\. #]+?)?\}/',
+      function ($m)
+      {
+        $order = intval($m[1]) + 1;
 
-                                          //フォーマット指定子が無い場合のデフォルトは 's' を使用する。
-                                          $f = isset($m[2]) && !empty($m[2]) ? ltrim($m[2],':') : 's';
+        //フォーマット指定子が無い場合のデフォルトは 's' を使用する。
+        $f = isset($m[2]) && !empty($m[2]) ? ltrim($m[2], ':') : 's';
 
-                                          return '%' . $order . '$' . $f;
-                                        },
-                                        $fmt),
-                  $params);
+        return '%' . $order . '$' . $f;
+      },
+      $fmt
+    ),
+    $params
+  );
 }
-function str_format_escape()
+
+function str_format_escape() : string
 {
   $params = func_get_args();
   $fmt = array_shift($params);
@@ -332,31 +346,38 @@ function str_format_escape()
   $fmt = str_replace('{{',$b,$fmt);
   $fmt = preg_replace('/}}([^}]|\Z|\z)/',"$e$1",$fmt);
 
-  return str_replace(array($b,$e),array('{','}'),str_format($fmt,$params));
+  return str_replace([$b,$e],['{','}'],str_format($fmt,$params));
 }
 
 /*------------------------------------------------------------------------------
  デバッグ出力
 -------------------------------------------------------------------------------*/
-function logSQL($store,$eventname)
+function logSQL(Store $store,string $eventname) : void
 {
-  $store->on($eventname,
-             function($type,$sql)
-             {
-               file_put_contents(TEMPORARY_DIR.'/sql.log',
-                                 $sql."\n",
-                                 FILE_APPEND);
-             });
+  $store->on(
+    $eventname,
+    function ($type, $sql)
+    {
+      file_put_contents(
+        TEMPORARY_DIR . '/sql.log',
+        $sql . "\n",
+        FILE_APPEND
+      );
+    }
+  );
 }
-function print_r_html($ar,$return = false)
+
+function print_r_html(array $ar,bool $return = false) : ?string
 {
   $rv = sprintf('<pre>%s</pre>',print_r($ar,true));
   if($return)
     return $rv;
   else
     echo $rv;
+
+  return null;
 }
-function var_dump_ret($mixed)
+function var_dump_ret(mixed $mixed) : string
 {
   ob_start();
   var_dump($mixed);
@@ -365,13 +386,15 @@ function var_dump_ret($mixed)
 
   return $content;
 }
-function var_dump_html($var)
+
+function var_dump_html(mixed $var) : void
 {
   $content = var_dump_ret($var);
   if(!empty($content))
     echo '<pre>',htmlspecialchars($content,ENT_QUOTES),'</pre>';
 }
-function var_dump_to($mixed,$to = '/dev/null')
+
+function var_dump_to(mixed $mixed,mixed $to = '/dev/null') : void
 {
   $caller = debug_backtrace();
   $content = var_dump_ret($mixed);
@@ -380,7 +403,7 @@ function var_dump_to($mixed,$to = '/dev/null')
   if(empty($content))
     return;
 
-  $output = array();
+  $output = [];
   $output[] = str_repeat('-',70);
   $output[] = sprintf(' * %s  function: %s',date('Y-m-d H:i:s'),$caller[1]['function']);
   $output[] = str_repeat('-',70);
@@ -410,16 +433,15 @@ function var_dump_to($mixed,$to = '/dev/null')
       flock($to,LOCK_UN);
     }
   }
-
 }
 
 /*------------------------------------------------------------------------------
   append or prepend space if not empty.
 ------------------------------------------------------------------------------*/
-function add_space_ifnot_empty($str,$position = 0,$adding = ' ')
+function add_space_ifnot_empty(string $str,int $position = 0,string $adding = ' ') : ?string
 {
   $rv = $str;
-  if(is_string($str) && !empty($str))
+  if(!empty($str))
   {
     if($position > 0)
       $rv = substr($str,0,$position) . $adding . substr($str,$position);
@@ -441,7 +463,7 @@ if(!function_exists('mb_trim'))
 /*-------------------------------------------------------------------------------
   UUID v4 generator
 ------------------------------------------------------------------------------*/
-function uuid()
+function uuid() : string
 {
   if(function_exists('com_create_guid') === true)
     return trim(com_create_guid(), '{}');

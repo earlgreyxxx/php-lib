@@ -48,7 +48,7 @@
 
 class FormTemplate extends PageTemplate
 {
-  protected function getInputTag($type,$name,$value,$attrs = array())
+  protected function getInputTag(string $type,string $name,string|int|null $value,array $attrs = []) : string
   {
     $rv = '';
     $classes = do_filter('input-class',array_key_exists('class',$attrs) ? $attrs['class'] : '');
@@ -68,7 +68,7 @@ class FormTemplate extends PageTemplate
   }
 
   // $label : array( before => bool,after => bool,content => string,for => string )
-  protected function input($type,$name,$value,array $label = array(),array $attrs = array())
+  protected function input(string $type,string $name,int|string|null $value,array $label = array(),array $attrs = []) : void
   {
     $before = '';
     $after = '';
@@ -96,42 +96,42 @@ class FormTemplate extends PageTemplate
       echo $before,$output,$after,PHP_EOL;
     do_action('input-after');
   }
-  protected function inputVal($type,$name,$propname,$label = array(),$attrs = array())
+  protected function inputVal(string $type,string $name,string $propname,array $label = [],array $attrs = []) : void
   {
     $this->input($type,$name,$this[$propname],$label,$attrs);
   }
 
   // adding class filter
-  public function addClassFilter($filter_name,$classname)
+  public function addClassFilter(string $filter_name,string $classname) : void
   {
     add_filter($filter_name,function($class) use($classname) { return $class . (empty($class) ? '' : ' ') . $classname; });
   }
   // adding before filter
-  public function addInputAction($filter_name,$str)
+  public function addInputAction(string $filter_name,string $str) : void
   {
     add_action($filter_name,function() use($str) { echo $str; });
   }
 
-  public function hidden($name,$value,$attrs = array())
+  public function hidden(string $name,int|string $value,array $attrs = []) : void
   {
     $this->input('hidden',$name,$value,array(),$attrs);
   }
-  public function hiddens($nv,array $attrs = array())
+  public function hiddens(array $nv,array $attrs = []) : void
   {
     foreach($nv as $name => $value)
       $this->hidden($name,$value,$attrs);
   }
-  public function hiddenVal($name,$propname,$attrs = array())
+  public function hiddenVal(string $name,string $propname,$attrs = []) : void
   {
     $this->inputVal('hidden',$name,$propname,array(),$attrs);
   }
-  public function hiddenVals(array $np,array $attrs = array())
+  public function hiddenVals(array $np,array $attrs = []) : void
   {
     foreach($np as $name => $propname)
       $this->hiddenVal($name,$propname,$attrs);
   }
 
-  public function textbox($name,$value,$label = array(),array $attrs = array())
+  public function textbox(string $name,int|string $value,array $label = [],array $attrs = []) : void
   {
     $classes = do_filter('text-class',array_key_exists('class',$attrs) ? $attrs['class'] : '');
     if(!empty($classes))
@@ -139,12 +139,12 @@ class FormTemplate extends PageTemplate
 
     $this->input('text',$name,$value,$label,$attrs);
   }
-  public function textboxVal($name,$propname,$label = array(),array $attrs = array())
+  public function textboxVal(string $name,string $propname,array $label = [],array $attrs = []) : void
   {
     $this->input('text',$name,$this[$propname],$label,$attrs);
   }
 
-  public function textarea($name,$content,array $attrs = array())
+  public function textarea(string $name,string $content,array $attrs = []) : void
   {
     $classes = do_filter('textarea-class',array_key_exists('class',$attrs) ? $attrs['class'] : '');
     if(!empty($classes))
@@ -155,12 +155,12 @@ class FormTemplate extends PageTemplate
 
     $this->tag('textarea',$content,$attrs);
   }
-  public function textareaVal($name,$propname,array $attrs = array())
+  public function textareaVal(string $name,string $propname,array $attrs = []) : void
   {
     $this->textarea($name,$this[$propname],$attrs);
   }
 
-  public function checkbox($name,$value,$label = array(),$checked = false,$id = '')
+  public function checkbox(string $name,int|string $value,array $label = [],bool $checked = false,string $id = '') : void
   {
     if(empty($id))
       $id = preg_replace('/[\[\]]/','',$name) . '-' . $value;
@@ -182,14 +182,14 @@ class FormTemplate extends PageTemplate
 
     $this->input('checkbox',$name,$value,$label,$attrs);
   }
-  public function checkboxVal($name,$propname,$label = array(),$checked = false,$id = '')
+  public function checkboxVal(string $name,string $propname,array $label = [],bool $checked = false,string $id = '') : void
   {
     $value = $this->get($propname);
     $this->checkbox($name,$value,$label,$checked,$id);
   }
 
   //$nv = array( name => array have keys of (value,checked,label,before,after), ....)
-  public function checkboxes($name,$values)
+  public function checkboxes(string $name,array $values) : void
   {
     foreach($values as $var)
     {
@@ -202,7 +202,7 @@ class FormTemplate extends PageTemplate
   }
 
   //$nv = array( name => array have keys of (propname,checked,label,before,after), ....)
-  public function checkboxesVal($name,$values)
+  public function checkboxesVal(string $name,array $values) : void
   {
     foreach($values as &$var)
       $var['value'] = $this->get($var['propname']);
@@ -210,7 +210,7 @@ class FormTemplate extends PageTemplate
     $this->checkboxes($name,$values);
   }
 
-  public function radio($name,$value,$label = array(),$checked = false,$id = '')
+  public function radio(string $name,int|string $value,array $label = [],bool $checked = false,string $id = '') : void
   {
     if(empty($id))
       $id = preg_replace('/[\[\]]/','',$name) . '-' . $value;
@@ -222,7 +222,7 @@ class FormTemplate extends PageTemplate
       $label['for'] = $id;
 
     $classes = do_filter('radio-class','');
-    $attrs = array();
+    $attrs = [];
     if(!empty($id))
       $attrs['id'] = $id;
     if($checked)
@@ -232,13 +232,13 @@ class FormTemplate extends PageTemplate
 
     $this->input('radio',$name,$value,$label,$attrs);
   }
-  public function radioVal($name,$propname,$label = array(),$checked = false,$attrs = array())
+  public function radioVal(string $name,string $propname,array $label = [],bool $checked = false,string $id = '') : void
   {
-    $this->radio($name,$this->get($propname),$label,$checked,$attrs);
+    $this->radio($name,$this->get($propname),$label,$checked,$id);
   }
 
   //$nv = array( name => array have keys of (value,label,before,$after), ....)
-  public function radioes($name,$values,$checked = '')
+  public function radioes(string $name,array $values,string $checked = '') : void
   {
     foreach($values as $var)
     {
@@ -250,7 +250,7 @@ class FormTemplate extends PageTemplate
     }
   }
   //$nv = array( name => array have keys of (propname,label,before,$after), ....)
-  public function radioesVal($name,$values,$checked = '')
+  public function radioesVal(string $name,array $values,string $checked = '') : void
   {
     foreach($values as &$var)
       $var['value'] = $this->get($var['propname']);
@@ -258,7 +258,7 @@ class FormTemplate extends PageTemplate
     $this->radioes($name,$values,$checked);
   }
 
-  public function select($name,$options)
+  public function select(string $name,array $options) : void
   {
     $attrs = array();
     if(!empty($name))
@@ -272,7 +272,7 @@ class FormTemplate extends PageTemplate
       $this->option($option['value'],$option['content'],$option['selected']);
     echo $this->getEndTag('select'),PHP_EOL;
   }
-  public function option($value,$content,$selected = false,$disabled = false)
+  public function option(int|string $value,string $content,bool $selected = false,bool $disabled = false) : void
   {
     $attrs = array();
     if(!empty($value) || (is_int($value) && $value === 0) || (is_string($value) && preg_match('/^0+$/',$value)))
@@ -285,35 +285,35 @@ class FormTemplate extends PageTemplate
     echo "\t";
     $this->tag('option',$content,$attrs);
   }
-  protected function _button($buttonname,$name,$value,$attrs = array())
+  protected function _button(string $buttonname,string $name,int|string $value,array $attrs = []) : void
   {
     $classes = do_filter('button-class',array_key_exists('class',$attrs) ? $attrs['class'] : '');
     if(!empty($classes))
       $attrs['class'] = $classes;
 
-    $this->input($buttonname,$name,$value,null,$attrs);
+    $this->input($buttonname,$name,$value,[],$attrs);
   }
-  public function button($name,$value,$attrs = array())
+  public function button(string $name,int|string $value,array $attrs = []) : void
   {
     $this->_button('button',$name,$value,$attrs);
   }
-  public function buttonVal($name,$propname,$attrs = array())
+  public function buttonVal(string $name,string $propname,array $attrs = []) : void
   {
     $this->button($name,$this[$propname],$attrs);
   }
-  public function submit($name = '',$value = '',$attrs = array())
+  public function submit(string $name = '',int|string $value = '',array $attrs = []) : void
   {
     $this->_button('submit',$name,$value,$attrs);
   }
-  public function submitVal($name = '',$propname = '',$attrs = array())
+  public function submitVal(string $name = '',string $propname = '',array $attrs = []) : void
   {
     $this->submit($name,$this[$propname],$attrs);
   }
-  public function reset($name = '',$value = '' ,$attrs = array())
+  public function reset(string $name = '',int|string $value = '' ,array $attrs = []) : void
   {
     $this->_button('reset',$name,$value,$attrs);
   }
-  public function resetVal($name = '',$propname = '' ,$attrs = array())
+  public function resetVal(string $name = '',string $propname = '' ,array $attrs = []) : void
   {
     $this->reset($name,$this[$propname],$attrs);
   }
@@ -325,9 +325,9 @@ class FormTemplate extends PageTemplate
   $end   : 終了(INT),
   $delta : 刻み(INT)
   ------------------------------------------------------------------------------*/
-  public function OptionRange($start,$end,$delta = 1,$selected_value = false)
+  public function OptionRange(int $start,int $end,int $delta = 1,mixed $selected_value = false) : void
   {
-    $selected = array();
+    $selected = [];
 
     if($selected_value !== false &&  $selected_value !== null)
       $selected[$selected_value] = ' selected';

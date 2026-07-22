@@ -1,5 +1,4 @@
-<?php
-/*******************************************************************************
+<?php /**************************************************************************
 
   This class is derivered from PDO(PHP INTERNAL CORE CLASS).
    Aattach database handle(PDO Instance) to Store Object,
@@ -16,21 +15,21 @@ class PDOSqlite extends PDOExtension
   /*------------------------------------------------------------------------------
     Statics
   ------------------------------------------------------------------------------*/
-  protected static $CONDITION = 'WHERE ';
-  protected static $DBM = 'sqlite';
+  protected static string $CONDITION = 'WHERE ';
+  protected static string $DBM = 'sqlite';
 
   /*------------------------------------------------------------------------------
     Instances
   ------------------------------------------------------------------------------*/
-  protected $isInTransaction = false;
+  protected bool $isInTransaction = false;
 
   //'EXCLUSIVE'/排他ロック 'IMMEDIATE'/即時ロック 'DEFERRED'/予約ロック
-  protected $transactionMode = 'DEFERRED';
+  protected string $transactionMode = 'DEFERRED';
 
   /*------------------------------------------------------------------------------
     Constructor
   ------------------------------------------------------------------------------*/
-  public function __construct($dsn,$username='',$password='',$options = array())
+  public function __construct(string $dsn,string $username='',string $password='',array $options = [])
   {
     $this->dsn = $dsn;
     parent::__construct($dsn,$username,$password,$options);
@@ -56,11 +55,9 @@ class PDOSqlite extends PDOExtension
     }
     if(version_compare($this->getAttribute(PDO::ATTR_SERVER_VERSION),'3.6.0')<0)
     {
-      $this->sqliteCreateFunction('replace',
-        function($subject,$search,$replace)
-        {
-          return str_replace($search,$replace,$subject);
-        },
+      $this->sqliteCreateFunction(
+        'replace',
+        fn($subject,$search,$replace) => str_replace($search,$replace,$subject),
         3);
     }
 
@@ -71,7 +68,7 @@ class PDOSqlite extends PDOExtension
   /*------------------------------------------------------------------------------
     Implements
   ------------------------------------------------------------------------------*/
-  public function exists($table)
+  public function exists(string $table) : bool
   {
     $rv = false;
     if(false === ($sth = $this->prepare('SELECT COUNT(*) FROM sqlite_master WHERE type=\'table\' and name=?')))
@@ -90,7 +87,7 @@ class PDOSqlite extends PDOExtension
     return $rv;
   }
 
-  public function getTables($get_option = 0)
+  public function getTables(mixed $get_option = 0) : array
   {
     $rv = false;
     if(false === ($sth = $this->query('SELECT * FROM sqlite_master WHERE type=\'table\'')))
@@ -110,7 +107,7 @@ class PDOSqlite extends PDOExtension
     return $rv;
   }
 
-  public function getColumns($table)
+  public function getColumns(string $table) : array
   {
     $rv = false;
 
@@ -132,14 +129,14 @@ class PDOSqlite extends PDOExtension
   }
 
   // not implement
-  public function getInfo()
+  public function getInfo() : array
   {
-    return array('table' => array(),'column' => array());
+    return ['table' => [],'column' => []];
   }
 
-  public function getLastUpdate($table,$fmt = 'Y/m/d')
+  public function getLastUpdate(string $table,string $fmt = 'Y/m/d') : string
   {
-    $rv = false;
+    $rv = '';
     $file = substr($this->dsn,strlen('sqlite')+1);
     if(file_exists($file))
       $rv = date($fmt,filemtime($file));
@@ -148,7 +145,7 @@ class PDOSqlite extends PDOExtension
   }
 
   // クロス・プロセスにおけるトランザクション・チェックは未実装
-  public function begin()
+  public function begin() : bool
   {
     return $this->beginTransaction();
   }
@@ -214,9 +211,9 @@ class PDOSqlite extends PDOExtension
   }
 
   //テーブル生成
-  public function createTable($table,$columns)
+  public function createTable(string $table,array $columns) : int|false
   {
-    $values = array('AUTOINCREMENT' => 'AUTOINCREMENT');
+    $values = ['AUTOINCREMENT' => 'AUTOINCREMENT'];
 
     $sql = sprintf('CREATE TABLE %s(%s)',
       $this->quoteTable($table),
@@ -226,7 +223,7 @@ class PDOSqlite extends PDOExtension
   }
 
   //インデックス作成
-  public function createIndex($table,$index,$columns,$unique = false,$grant = 'alter')
+  public function createIndex(string $table,string $index,array $columns,bool $unique = false,string $grant = 'alter') : int|false
   {
     $sql = sprintf('CREATE %s %s ON %s(%s)',
       $unique ? 'UNIQUE INDEX' : 'INDEX',
@@ -238,18 +235,19 @@ class PDOSqlite extends PDOExtension
   }
 
   // 外部キー制約
-  public function setForeignKeyConstraint(string $table,?array $params = null)
+  public function setForeignKeyConstraint(string $table,?array $params = null) : int|false
   {
     throw new RuntimeException(_('not implement'));
+    return false;
   }
 
-  public function groupconcat($column)
+  public function groupconcat(string $column) : string
   {
     return sprintf("';'||group_concat(%s,';')||';'",$column);
   }
 
   //カラム連結
-  public function concat($columns,$as = '')
+  public function concat(array $columns,string $as = '') : string
   {
     $rv = implode(' || ',$this->quoteColumns($columns));
     if(!empty($as))
@@ -259,23 +257,29 @@ class PDOSqlite extends PDOExtension
   }
 
   // drop tables
-  public function drops(array $tables)
+  public function drops(array $tables) : int|false
   {
     $pdo = $this;
+    $count = 0;
     $tables = array_filter($tables,function($el) use($pdo) { return $pdo->exists($el); });
     foreach($tables as $table)
-      $this->drop($table);
+      if($this->drop($table))
+        $count++;
+
+    return $count > 0 ? $count : false;
   }
 
   // Trancate table
-  public function truncate(string $table)
+  public function truncate(string $table) : int|false
   {
+    $rv = false;
     if(!$this->exists($table))
       throw new RuntimeException(_('table not found'));
 
     $this->exec(sprintf('DELETE FROM %s',$this->quotetable($table)));
     if(!$this->inTransaction())
-      $this->exec('VACUUM');
+      $rv = $this->exec('VACUUM');
+
+    return $rv;
   }
 }
-

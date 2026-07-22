@@ -9,13 +9,13 @@
 class WebControllerBase extends ControllerBase
 {
   // parameters
-  protected $r = null;
-  protected $f = null;
-  protected $p = null;
-  protected $g = null;
+  protected ?array $r = null;
+  protected ?array $f = null;
+  protected ?array $p = null;
+  protected ?array $g = null;
 
   //Constructor
-  public function __construct(array $define = array())
+  public function __construct(array $define = [])
   {
     if(isset($define['input']) && is_array($define['input']))
     {
@@ -37,15 +37,15 @@ class WebControllerBase extends ControllerBase
   }
 
   // base view implementation
-  protected function createView()
+  protected function createView() : ViewBase
   {
     return ViewBase::CreateInstance();
   }
-  public function getView()
+  public function getView() : ViewBase
   {
     return $this->view;
   }
-  protected function setView($view)
+  protected function setView(ViewBase $view) : ?ViewBase
     {
       $rv = $this->view;
       if(!($view instanceof ViewBase))
@@ -55,7 +55,7 @@ class WebControllerBase extends ControllerBase
       return $rv;
     }
 
-  protected function init()
+  protected function init() : void
   {
     parent::init();
     if($this->view !== false && $this->view instanceof ViewBase)
@@ -68,7 +68,7 @@ class WebControllerBase extends ControllerBase
   }
 
   // get current page number
-  protected function getPage($name = 'p')
+  protected function getPage(string $name = 'p') : int
   {
     $r = $this->r;
     $rv = 1;

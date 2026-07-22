@@ -7,5 +7,5 @@
 *******************************************************************************/
 interface Certification
 {
-  public function certify($data,$params);
+  public function certify(mixed $data,array $params) : array|bool;
 }

@@ -11,66 +11,70 @@ class UrlencodedUpload
   /*------------------------------------------------------------------------------
     Instances.
   ------------------------------------------------------------------------------*/
-  protected $p;
-  protected $files = array('name' => array(),
-                           'size' => array(),
-                           'type' => array(),
-                           'tmp_name' => array());
+  protected array $p;
+  protected $files = [
+    'name' => [],
+    'size' => [],
+    'type' => [],
+    'tmp_name' => []
+  ];
 
-  public function __construct($postdata)
-    {
-      $this->p = $postdata;
-    }
+  public function __construct(array $postdata)
+  {
+    $this->p = $postdata;
+  }
 
   //ファイルダウンロードを開始する。
-  public function begin($name_data = 'data',$name_name = 'name',$name_size = 'size',$name_type = 'type')
+  public function begin(string $name_data = 'data',string $name_name = 'name',string $name_size = 'size',string $name_type = 'type') : bool
+  {
+    $rv = false;
+
+    if (!is_array($this->p[$name_data]) || !is_array($this->p[$name_size]) || !is_array($this->p[$name_name]) || !is_array($this->p[$name_type]))
+      return $rv;
+
+    $num = count($this->p[$name_data]);
+
+    $data = $this->p[$name_data];
+    $size = $this->p[$name_size];
+    $name = $this->p[$name_name];
+    $type = $this->p[$name_type];
+
+    $files = [
+      'size' => [],
+      'name' => [],
+      'type' => [],
+      'tmp_name' => []
+    ];
+
+    $temp_dir = defined('TEMPORARY_DIR') ? TEMPORARY_DIR : sys_get_temp_dir();
+    for ($i = 0; $i < $num; $i++)
     {
-      $rv = false;
+      if (preg_match('/^data:.*?;base64,/', $data[$i], $matches))
+      {
+        $temp_path = get_temporary_filepath($temp_dir, $i);
 
-      if(!is_array($this->p[$name_data]) || !is_array($this->p[$name_size]) || !is_array($this->p[$name_name]) || !is_array($this->p[$name_type]))
-        return $rv;
+        if (($fh = fopen($temp_path, 'x')) === false)
+          break;
 
-      $num = count($this->p[$name_data]);
+        fwrite($fh, base64_decode(substr($data[$i], strlen($matches[0]))));
+        fclose($fh);
 
-      $data = $this->p[$name_data];
-      $size = $this->p[$name_size];
-      $name = $this->p[$name_name];
-      $type = $this->p[$name_type];
+        $files['size'][$i] = intval($size[$i]);
+        $files['name'][$i] = $name[$i];
+        $files['type'][$i] = str_sanitize($type[$i]);
+        $files['tmp_name'][$i] = $temp_path;
 
-      $files = array('size' => array(),
-                     'name' => array(),
-                     'type' => array(),
-                     'tmp_name' => array());
-
-      $temp_dir = defined('TEMPORARY_DIR') ? TEMPORARY_DIR : sys_get_temp_dir();
-      for($i=0;$i<$num;$i++)
-        {
-          if(preg_match('/^data:.*?;base64,/',$data[$i],$matches))
-            {
-              $temp_path = get_temporary_filepath($temp_dir,$i);
-
-              if(($fh = fopen($temp_path,'x')) === false)
-               break;
-
-              fwrite($fh,base64_decode(substr($data[$i],strlen($matches[0]))));
-              fclose($fh);
-
-              $files['size'][$i] = intval($size[$i]);
-              $files['name'][$i] = $name[$i];
-              $files['type'][$i] = str_sanitize($type[$i]);
-              $files['tmp_name'][$i] = $temp_path;
-
-              unset($data[$i]);
-              unset($this->p[$name_data][$i]);
-           }
-       }
-      $this->files = $files;
-      return true;
+        unset($data[$i]);
+        unset($this->p[$name_data][$i]);
+      }
     }
+    $this->files = $files;
+    return true;
+  }
 
   //$_FILESを返す。
-  public function end()
-    {
-      return $this->files;
-    }
+  public function end() : array
+  {
+    return $this->files;
+  }
 }

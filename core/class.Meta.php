@@ -21,7 +21,7 @@
 
 class Meta implements ArrayAccess
 {
-  public static function Prepare(PDO $pdoex,$table,$meta_fkey)
+  public static function Prepare(PDOExtension $pdoex,string $table,string $meta_fkey) : true
   {
     $varchar_type = do_filter('meta-prepare-varchar-type',array('meta_key' => 'VARCHAR(128)','meta_value' => 'VARCHAR(512)'));
     $columns = array('meta_id INTEGER PRIMARY KEY %AUTOINCREMENT%',
@@ -42,14 +42,14 @@ class Meta implements ArrayAccess
 
   //スタティック・メソッドはここまで
 
-  private $pdo;
-  private $table;
-  private $columns;
-  private $filter;
-  private $action;
+  private PDOExtension $pdo;
+  private string $table;
+  private array $columns;
+  private ?Filter $filter = null;
+  private ?Action $action = null;
   private $dbm;
 
-  public function __construct($pdo,$table,array $options = array())
+  public function __construct(PDOExtension $pdo,string $table,array $options = [])
   {
     $this->pdo = $pdo;
 
@@ -70,38 +70,30 @@ class Meta implements ArrayAccess
       $this->action = new Action();
   }
 
-  public function attachFilter($filter)
+  public function attachFilter(Filter $filter) : ?Filter
   {
-    $rv = false;
-    if($filter instanceof Filter)
-    {
-      $rv = $this->filter;
-      $this->filter = $filter;
-    }
+    $rv = $this->filter;
+    $this->filter = $filter;
     return $rv;
   }
-  public function attachAction($action)
+  public function attachAction(Action $action) : ?Action
   {
-    $rv = false;
-    if($filter instanceof Action)
-    {
-      $rv = $this->action;
-      $this->action = $action;
-    }
+    $rv = $this->action;
+    $this->action = $action;
     return $rv;
   }
 
-  protected function getHandle()
+  protected function getHandle() : PDOExtension
   {
     return $this->pdo;
   }
 
-  protected function get_table()
+  protected function get_table() : string
   {
     return $this->table;
   }
 
-  public function count($id,$k = '',$v = '')
+  public function count(int $id,string $k = '',int|string $v = '') : int
   {
     $rv = false;
     $pdo = $this->pdo;
@@ -145,23 +137,23 @@ class Meta implements ArrayAccess
     return $rv;
   }
 
-  public function beginTransaction($params = null)
+  public function beginTransaction($params = null) : bool
   {
     return $this->getHandle()->beginTransaction();
   }
 
-  public function commit()
+  public function commit() : bool
   {
     return $this->getHandle()->commit();
   }
 
-  public function rollBack()
+  public function rollBack() : bool
   {
     return $this->gethandle()->rollBack();
   }
 
   //外部キー,メタキー名,値,重複可能か？
-  public function set($id,$k,$v,$is_multi = false)
+  public function set(int $id,string $k,mixed $v,bool $is_multi = false) : bool|int
   {
     $rv = false;
     $pdo = $this->pdo;
@@ -171,7 +163,8 @@ class Meta implements ArrayAccess
     if($is_multi !== false || is_array($v))
       return $this->multiset($id,$k,$v,$is_multi);
 
-    $order = null;
+    $orders = null;
+    $sql = '';
 
     //重複確認
     $num = $this->count($id,$k,'');
@@ -236,7 +229,7 @@ class Meta implements ArrayAccess
 
   //$is_appendがfalseの時、値が配列の場合一旦削除して追加する。
   //trueの時は削除しない。
-  public function multiset($id,$k,$v,$is_append = false)
+  public function multiset(int $id,string $k,mixed $v,bool $is_append = false) : bool|int
   {
     $rv = false;
     $pdo = $this->pdo;
@@ -309,7 +302,7 @@ class Meta implements ArrayAccess
 
 
   //複数の(キー、値)を一括登録(setメソッドのラッパーメソッド)
-  public function sets($id,array $kv,$is_multi = false)
+  public function sets(int $id,array $kv,bool $is_multi = false)
   {
     $rv = 0;
     foreach($kv as $k => $v)
@@ -322,7 +315,7 @@ class Meta implements ArrayAccess
   }
 
   //キーの一括更新。
-  public function update($k,$v,$match = null)
+  public function update(string $k,mixed $v,mixed $match = '') : bool
   {
     $rv = false;
     $pdo = $this->pdo;
@@ -355,7 +348,7 @@ class Meta implements ArrayAccess
   }
 
   //updateメソッドのラッパー
-  public function updates(array $kv,$matches = null)
+  public function updates(array $kv,mixed $matches = null) : array
   {
     $rv = array();
     foreach($kv as $k => $v)
@@ -366,7 +359,7 @@ class Meta implements ArrayAccess
 
   //同じキーが複数ある場合は一番後から追加したものを返す。
   //$is_multi = trueを指定すると、すべて配列にして返す。
-  public function get($id,$k,$is_multi = false)
+  public function get(int $id,string $k,bool $is_multi = false) : mixed
   {
     $rv = false;
     $pdo = $this->pdo;
@@ -409,7 +402,7 @@ class Meta implements ArrayAccess
 
   //条件を指定してキーの値を配列として取得します。
   //$conditionは and で連結されます。$paramsはPDO::executeメソッドに渡されます。
-  public function get_cond($k,$condition = '',$params = array())
+  public function get_cond(string $k,string $condition = '',array $params = []) : mixed
   {
     $rv = false;
     $pdo = $this->getHandle();
@@ -451,7 +444,7 @@ class Meta implements ArrayAccess
   }
 
   //取得するキーを配列にして渡し、結果をハッシュ配列して返す。
-  public function gets($id,array $k = array())
+  public function gets(int $id,array $k = []) : mixed
   {
     $rv = false;
     $pdo = $this->pdo;
@@ -486,7 +479,7 @@ class Meta implements ArrayAccess
 
       if(false !== $sth->execute())
       {
-        $rv = array();
+        $rv = [];
         while(false !== ($row = $sth->fetch(PDO::FETCH_ASSOC)))
         {
           $k_ = $row['meta_key'];
@@ -511,7 +504,7 @@ class Meta implements ArrayAccess
     return $rv;
   }
 
-  public function keys($id)
+  public function keys(int $id) : array|false
   {
     $rv = false;
     $pdo = $this->pdo;
@@ -542,7 +535,7 @@ class Meta implements ArrayAccess
   }
 
   //キー、値に部分検索した行を返す。
-  public function search($k,$v = '')
+  public function search(string $k,string $v = '') : array|false
   {
     $rv = false;
     $pdo = $this->pdo;
@@ -576,7 +569,7 @@ class Meta implements ArrayAccess
     return $rv;
   }
 
-  public function match($k,$v = '')
+  public function match(string $k,string $v = '') : array|false
   {
     $rv = false;
     $pdo = $this->pdo;
@@ -612,7 +605,7 @@ class Meta implements ArrayAccess
     return $rv;
   }
 
-  public function remove($id,$keys = '')
+  public function remove(int $id,string|array $keys = '')
   {
     $pdo = $this->pdo;
     $rv = false;
@@ -649,7 +642,7 @@ class Meta implements ArrayAccess
     return $rv;
   }
 
-  public function remove_if($id,$key,$value)
+  public function remove_if(int $id,string $key,mixed $value) : int|false
   {
     $pdo = $this->pdo;
     $rv = false;
@@ -680,7 +673,7 @@ class Meta implements ArrayAccess
   }
 
   //$idのメタデータを全削除
-  public function clear($id)
+  public function clear(int $id) : int|false
   {
     $pdo = $this->pdo;
     $sql = sprintf('DELETE FROM %s WHERE %s = %d',
@@ -692,10 +685,10 @@ class Meta implements ArrayAccess
   }
 
   //$keyのkeyカラムをvalueカラムで集計した結果を連想配列にして返す。
-  public function group_count($key)
+  public function group_count(string $key) : array|false
   {
     $rv = false;
-    if(empty($key) || !is_string($key))
+    if(empty($key))
       return $rv;
 
     $rv = array();
@@ -731,7 +724,7 @@ class Meta implements ArrayAccess
     return $rv;
   }
 
-  private function checkOffset($offset)
+  private function checkOffset(int|string $offset)
   {
     if(!is_numeric($offset) || intval($offset) <= 0)
       throw new Exception(_('$offset is invalid type'));
@@ -739,25 +732,22 @@ class Meta implements ArrayAccess
 
   // implements ArrayAccess
   // array access returns iterator.
-  #[\ReturnTypeWillChange]
-  public function offsetExists($offset)
+  public function offsetExists($offset) : bool
   {
     $this->checkOffset($offset);
     return 0 < $this->count($offset);
   }
-  #[\ReturnTypeWillChange]
-  public function offsetGet($offset)
+
+  public function offsetGet(mixed $offset) : mixed
   {
     $this->checkOffset($offset);
     return new ArrayIterator($this->gets($offset));
   }
-  #[\ReturnTypeWillChange]
-  public function offsetSet($offset,$value)
+  public function offsetSet(mixed $offset,mixed $value) : void
   {
     throw new Exception(_('Not implement offsetSet method.'));
   }
-  #[\ReturnTypeWillChange]
-  public function offsetUnset($offset)
+  public function offsetUnset(mixed $offset) : void
   {
     $this->checkOffset($offset);
     $this->clear($offset);

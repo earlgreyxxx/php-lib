@@ -12,12 +12,12 @@ if(!defined('EXPIRE_ID_SIGN'))
 
 abstract class SignBase extends WebApplicationStub
 {
-  protected static $app;
+  protected static mixed $app;
 
   /*------------------------------------------------------------------------------
     Instances here
   ------------------------------------------------------------------------------*/
-  protected function init()
+  protected function init() : void
   {
     parent::init();
     $view = $this->getView();
@@ -26,7 +26,7 @@ abstract class SignBase extends WebApplicationStub
     $view->setFooter(false);
   }
 
-  protected function do_signin()
+  protected function do_signin() : bool
   {
     $cookie = Cookie::GetInstance('signin');
 
@@ -39,7 +39,7 @@ abstract class SignBase extends WebApplicationStub
   }
 
   // mode=post
-  protected function do_signin_certificate()
+  protected function do_signin_certificate() : bool
   {
     $session = Session::GetInstance(SESSION_APPNAME);
 
@@ -61,11 +61,11 @@ abstract class SignBase extends WebApplicationStub
     if(false !== ($userinfo = $account->certify($password)))
     {
       $session->set(
-        array(
+        [
           'userinfo' => $userinfo,
           'expire' => time() + (defined('SESSION_LIFETIME') && SESSION_LIFETIME > 0 ? SESSION_LIFETIME : EXPIRE_ID_SIGN),
           'refresh' => time() + EXPIRE_ID_SIGN
-        )
+        ]
       );
       $cookie['null'] = 1;
       $cookie->expire(1);
@@ -88,7 +88,7 @@ abstract class SignBase extends WebApplicationStub
     return false;
   }
 
-  protected function do_signout()
+  protected function do_signout() : bool
   {
     do_action('signout');
 

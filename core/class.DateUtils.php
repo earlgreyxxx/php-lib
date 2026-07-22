@@ -11,7 +11,7 @@ class DateUtils
   /***************************************************************
    y年m月第n曜日の日付を返す
   ***************************************************************/
-  public static function Weekday($yy,$mm,$n,$wday)
+  public static function Weekday(int $yy,int $mm,int $n,int $wday) : int
   {
     $fst_wday = self::Week($yy,$mm,1);         //# 月初めの曜日計算
     $lastday  = self::Lastday($yy,$mm);        //# 指定した年・月の末日計算
@@ -31,7 +31,7 @@ class DateUtils
   /***************************************************************
    閏年の計算をしてその年の月ごとの日数を返す
   ***************************************************************/
-  public static function Monthday($yy)
+  public static function Monthday(int $yy)
   {
     $monthday = [0,31,28,31,30,31,30,31,31,30,31,30,31];
 
@@ -44,7 +44,7 @@ class DateUtils
   /***************************************************************
     指定した年・月の末日計算
   ***************************************************************/
-  public static function Lastday($yy,$mm)
+  public static function Lastday(int $yy,int $mm) : int
   {
     $monthdays = self::Monthday($yy);
 
@@ -54,7 +54,7 @@ class DateUtils
   /***************************************************************
    Zeller(ツェラー)の公式による曜日計算
   ***************************************************************/
-  public static function Week($yy,$mm,$dd)
+  public static function Week(int $yy,int $mm,int $dd) : int
   {
     if($mm == 1 || $mm == 2)
     {
@@ -69,7 +69,7 @@ class DateUtils
    指定した年の春分日・秋分日をもとめる
   （1980年から2099年に適用）
   ***************************************************************/
-  public static function Equinoxday($yy)
+  public static function Equinoxday(int $yy) : array
   {
     $days = [];
 
@@ -82,7 +82,7 @@ class DateUtils
   /***************************************************************
    祝日の算出
   ***************************************************************/
-  public static function nHoliday($yy)
+  public static function nHoliday(int $yy) : array
   {
     $equinox = self::Equinoxday($yy);     // 春分日・秋分日
     $wday_no = 0;
@@ -240,7 +240,7 @@ class DateUtils
   /***************************************************************
    国民の休日を考慮したyy年mm月の祝日を返す。
   ***************************************************************/
-  public static function mHoliday($yy,$mm)
+  public static function mHoliday(int $yy,int $mm) : array
   {
     $holiday = self::nHoliday($yy);
     if($yy > 2007)

@@ -11,9 +11,9 @@
 
 class CacheableDictionary extends Dictionary implements CacheableCollection
 {
-  private $cache;
+  private ApcuCache $cache;
 
-  public function __construct($dsn,$cachePrefix,$options = array())
+  public function __construct(string|PDOExtension $dsn,string $cachePrefix,array $options = [])
   {
     parent::__construct($dsn,$options);
     $this->cache = new ApcuCache($cachePrefix);
@@ -22,37 +22,38 @@ class CacheableDictionary extends Dictionary implements CacheableCollection
   /*------------------------------------------------------------------------------
     implement CacheableCollection
   ------------------------------------------------------------------------------*/
-  public function getCache()
+  public function getCache() : ApcuCache
   {
     return $this->cache;
   }
-  public function setCache(KeyValueCollection $collection)
+  public function setCache(KeyValueCollection $collection) : void
   {
     $this->cache = $collection;
   }
-  public function clearCache()
+  public function clearCache() : void
   {
     $this->clear();
   }
-  public function getTTL()
+  public function getTTL() : int
   {
     return $this->cache->getTTL();
   }
-  public function setTTL($value)
+  public function setTTL(int $value) : static
   {
-    return $this->cache->setTTL($value);
+    $this->cache->setTTL($value);
+    return $this;
   }
 
   /*------------------------------------------------------------------------------
     override parent method
   ------------------------------------------------------------------------------*/
-  protected function kv_set($k,$v,$options)
+  protected function kv_set(int|string|array $k,mixed $v,array $options) : mixed
   {
     $rv = parent::kv_set($k,$v,$options);
     $this->cache->set($k,$v,$options);
     return $rv;
   }
-  protected function kv_get($k,$v,$options)
+  protected function kv_get(int|string|array $k,mixed $v,array $options) : mixed
   {
     if($this->cache->exists($k))
     {
@@ -66,7 +67,7 @@ class CacheableDictionary extends Dictionary implements CacheableCollection
 
     return $rv;
   }
-  protected function kv_delete($k,$v,$options)
+  protected function kv_delete(int|string $k,mixed $v,array $options) : mixed
   {
     $rv = parent::kv_delete($k,$v,$options);
     $this->cache->delete($k);
@@ -74,9 +75,11 @@ class CacheableDictionary extends Dictionary implements CacheableCollection
     return $rv;
   }
 
-  protected function kv_clear($k,$v,$options)
+  protected function kv_clear(int|string|null $k,mixed $v,array $options) : mixed
   {
     parent::kv_clear($k,$v,$options);
     $this->cache->clear();
+
+    return null;
   }
 }

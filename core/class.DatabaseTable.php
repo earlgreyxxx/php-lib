@@ -12,43 +12,43 @@ abstract class DatabaseTable
 {
   // Instances
   // -----------------------------------------------------------------------
-  public function __construct(PDOExtension $pdo,$table)
+  public function __construct(PDOExtension $pdo,string $table)
   {
     $this->setHandle($pdo);
     $this->setTable($table);
   }
 
-  public function beginTransaction()
+  public function beginTransaction() : bool
   {
     return $this->getHandle()->beginTransaction();
   }
 
-  public function commit()
+  public function commit() : bool
   {
     return $this->getHandle()->commit();
   }
 
-  public function rollBack()
+  public function rollBack() : bool
   {
     return $this->getHandle()->rollBack();
   }
 
-  private $pdoex;
-  protected function getHandle()
+  private PDOExtension $pdoex;
+  protected function getHandle() : PDOExtension
   {
     return $this->pdoex;
   }
-  protected function setHandle(PDOExtension $pdoex)
+  protected function setHandle(PDOExtension $pdoex) : void
   {
     $this->pdoex = $pdoex;
   }
 
-  private $table;
-  protected function getTable()
+  private string $table;
+  protected function getTable() : string
   {
     return $this->table;
   }
-  protected function setTable($table)
+  protected function setTable(string $table) : void
   {
     $pdo = $this->pdoex;
     if(empty($table) || !$pdo->exists($table))
@@ -57,29 +57,27 @@ abstract class DatabaseTable
     $this->table = $table;
   }
 
-  private $db;
-  protected function getDB(bool $useDB = false)
+  private DB $db;
+  protected function getDB(bool $useDB = false) : DB
   {
     if($useDB)
       return clone $this->db;
     else
       return DB::CreateInstance($this->getHandle())->select()->from($this->getTable());
   }
-  protected function setDB(DB $db)
+  protected function setDB(DB $db) : static
   {
     $this->db = $db;
     return $this;
   }
   
-  private $columns = null;
-  protected function getColumns($shift = false)
+  private ?array $columns = null;
+  protected function getColumns(bool $shift = false) : ?array
   {
+    if(empty($this->columns))
+      $this->columns  = $this->getHandle()->getColumns($this->getTable());
+
     $columns = $this->columns;
-    if(empty($columns))
-    {
-      $columns  = $this->getHandle()->getColumns($this->getTable());
-      $this->columns = $columns;
-    }
 
     if($shift)
       array_shift($columns);
@@ -87,12 +85,13 @@ abstract class DatabaseTable
     return $columns;
   }
 
-  private $idColumn;
-  protected function getIdColumn()
+  private string $idColumn;
+  protected function getIdColumn() : string
   {
     return $this->idColumn;
   }
-  protected function setIdColumn($column = null)
+
+  protected function setIdColumn(?string $column = null) : static
   {
     $columns = $this->getHandle()->getColumns($this->getTable());
     if(empty($column))

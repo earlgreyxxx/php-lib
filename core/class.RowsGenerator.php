@@ -8,21 +8,23 @@ class RowsGenerator
   use RowsIteratorImp;
 
   //デフォルトオプション
-  protected $default = array('before' => '',
-                             'after'  => '',
-                             'empty'  => '',
-                             'delimitor' => '｜',
-                             'bool'   => false,
-                             'scramble' => false,
-                             'filter' => false );
+  protected array $default = [
+    'before' => '',
+    'after'  => '',
+    'empty'  => '',
+    'delimitor' => '｜',
+    'bool'   => false,
+    'scramble' => false,
+    'filter' => false
+  ];
 
-  protected $first = true;
+  protected bool $first = true;
 
-  protected $generator = null;
+  protected ?Generator $generator = null;
   /*------------------------------------------------------------------------------
     Constructor
   ------------------------------------------------------------------------------*/
-  public function __construct($generator,array $params = array())
+  public function __construct(Generator $generator,array $params = [])
     {
       if(!empty($params))
         $this->default = array_merge($this->default,$params);
@@ -38,7 +40,7 @@ class RowsGenerator
   ------------------------------------------------------------------------------*/
 
   // override
-  public function getRow()
+  public function getRow() : array
   {
     $rv = $this->generator->current();
     if($rv instanceof stdClass)
@@ -47,7 +49,7 @@ class RowsGenerator
     return $rv;
   }
 
-  public function move()
+  public function move() : bool
   {
     if($this->first === true)
       $this->first = false;
@@ -57,9 +59,8 @@ class RowsGenerator
     return $this->generator->valid();
   }
 
-  public function rewind()
+  public function rewind() : void
   {
     return;
   }
-
 }

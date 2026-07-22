@@ -18,57 +18,80 @@
 class MasterBase
 {
   // Static members
-  public static function Prepare($pdo,$tablename,array $column_definition)
+  public static function Prepare(PDOExtension $pdo,string $tablename,array $column_definition) : int|false
   {
     return $pdo->createTable($tablename,$column_definition);
   }
 
-  public static function GetInstance($tablename,$dsn,$user = '',$password = '', array $options = array())
+  public static function GetInstance(string $tablename,string|PDOExtension $dsn,string $user = '',string $password = '', array $options = []) : static
   {
-    static $instances = array();
+    static $instances = [];
     if($dsn instanceof PDOExtension)
     {
-      $pdo = $dsn;
+      $pdoex = $dsn;
       $key = spl_object_hash($dsn) . '-' . $tablename;
     }
     else
     {
-      $pdo = GetPdoInstance($dsn,$user,$password,$options);
+      $pdoex = GetPdoInstance($dsn,$user,$password,$options);
       $key = $dsn . '-' . $tablename;
     }
 
     if(array_key_exists($key,$instances))
       $instance = $instances[$key];
     else
-      $instance = $instances[$key] = new static($pdo,$tablename);
+      $instance = $instances[$key] = new static($pdoex,$tablename);
 
     return $instance;
   } 
 
   // Instance members
-  protected $dbh;
-  protected $columns;
-  protected $table;
-  protected $filter;
-  protected $action;
+  protected ?PDOExtension $dbh; 
+  protected array $columns;
+  protected string $table;
+  protected Filter $filter;
+  protected Action $action;
 
-  protected function getHandle()
+  public function __construct(PDOExtension $pdo,string $tablename,array $options = [])
+  {
+    $this->dbh = $pdo;
+    if(empty($tablename))
+      throw new Exception(_('table name was empty.'));
+
+    if(!$pdo->exists($tablename))
+      throw new Exception(sprintf(_('Table not found: %s'),$tablename));
+    
+    $this->columns = $pdo->getColumns($tablename);
+    $this->table = $tablename;
+    $this->filter = empty($options['filter']) || !($options['filter'] instanceof Filter) ? new Filter() : $options['filter'];
+    $this->action = empty($options['action']) || !($options['action'] instanceof action) ? new Action() : $options['action'];
+
+    if(method_exists($this,'init'))
+      $this->init();
+  }
+
+  public function __destruct()
+  {
+    $this->dbh = null;
+  }
+
+  protected function getHandle() : ?PDOExtension
   {
     return $this->dbh;
   }
 
-  protected function getTable()
+  protected function getTable() : string 
   {
     return $this->table;
   }
 
-  protected function getColumns()
+  protected function getColumns() : ?array
   {
     return $this->columns;
   }
 
   // $columns : comma separated column name to select
-  protected function selector($columns = '*')
+  protected function selector(string|array $columns = '*') : array
   {
     $pdo = $this->getHandle();
     if(empty($columns))
@@ -103,7 +126,7 @@ class MasterBase
     return $rv;
   }
 
-  protected function forceInserter(array $cv)
+  protected function forceInserter(array $cv) : string|false
   { 
     $pdo = $this->getHandle();
     if(!method_exists($pdo,'setInsertId'))
@@ -117,11 +140,11 @@ class MasterBase
   }
 
   // returns insert id
-  protected function inserter(array $cv)
+  protected function inserter(array $cv) : int|string|false
   {
     $pdo = $this->getHandle();
-    $columns = array();
-    $values = array();
+    $columns = [];
+    $values = [];
     foreach($this->getColumns() as $column)
     {
       if(isset($cv[$column]))
@@ -169,7 +192,7 @@ class MasterBase
     return $rv;
   }
 
-  protected function updater($id,array $cv)
+  protected function updater(int|string $id,array $cv) : bool
   {
     $pdo = $this->getHandle();
     $sets = array();
@@ -218,7 +241,7 @@ class MasterBase
     return $rv;
   }
 
-  protected function deleter($id)
+  protected function deleter(int|string $id) : bool
   {
     $pdo = $this->getHandle();
     $tableColumns = $this->getColumns();
@@ -229,7 +252,7 @@ class MasterBase
     );
     if(false === ($sth = $pdo->prepare($sql)))
     {
-      $err = $sth->errorInfo();
+      $err = $pdo->errorInfo();
       throw new RuntimeException($err[1].':'.$err[2]);
     }
 
@@ -246,67 +269,33 @@ class MasterBase
     return $rv;
   }
 
-  public function __construct(PDO $pdo,$tablename,array $options =  array())
+  public function begin() : bool
   {
-    $this->dbh = $pdo;
-    if(empty($tablename))
-      throw new Exception(_('table name was empty.'));
+    return $this->getHandle()->beginTransaction();
+  }
 
-    if(!$pdo->exists($tablename))
-      throw new Exception(sprintf(_('Table not found: %s'),$tablename));
+  public function commit() : bool
+  {
+    return $this->getHandle()->commit();
+  }
+
+  public function rollBack() : bool
+  {
+    return $this->getHandle()->rollBack();
+  }
+
+  public function attachFilter(Filter $filter) : ?Filter
+  {
+    $rv = $this->filter;
+    $this->filter = $filter;
     
-    $this->columns = $pdo->getColumns($tablename);
-    $this->table = $tablename;
-    $this->filter = null;
-    $this->action = null;
-    if((($existsFilter = array_key_exists('filter',$options)) && false === $this->attachFilter($options['filter'])) || !$existsFilter)
-      $this->filter = new Filter();
-    if((($existsAction = array_key_exists('action',$options)) && false === $this->attachAction($options['action'])) || !$existsAction)
-      $this->action = new Action();
-
-    if(method_exists($this,'init'))
-      $this->init();
-  }
-
-  public function __destruct()
-  {
-    $this->dbh = null;
-  }
-
-  public function begin()
-  {
-    $this->getHandle()->beginTransaction();
-  }
-
-  public function commit()
-  {
-    $this->getHandle()->commit();
-  }
-
-  public function rollBack()
-  {
-    $this->getHandle()->rollBack();
-  }
-
-  public function attachFilter($filter)
-  {
-    $rv = false;
-    if($filter instanceof Filter)
-    {
-      $rv = $this->filter;
-      $this->filter = $filter;
-    }
     return $rv;
   }
-  public function attachAction($action)
+  public function attachAction(Action $action) : ?Action
   {
-    $rv = false;
-    if($filter instanceof Action)
-    {
-      $rv = $this->action;
-      $this->action = $action;
-    }
+    $rv = $this->action;
+    $this->action = $action;
+
     return $rv;
   }
 }
-

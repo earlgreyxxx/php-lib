@@ -18,11 +18,11 @@ class ReversibleEncryption
   /*------------------------------------------------------------------------------
     INSTANCE MEMBERS
   ------------------------------------------------------------------------------*/
-  private $iv;
-  private $key;
-  private $algorithm;
+  private mixed $iv;
+  private string $key;
+  private string $algorithm;
 
-  private function CreateInitializingVector()
+  private function CreateInitializingVector() : string
   {
     $rv = random_bytes(openssl_cipher_iv_length($this->algorithm));
     return $rv !== false ? $rv : '';
@@ -31,63 +31,64 @@ class ReversibleEncryption
   /*------------------------------------------------------------------------------
     CONSTRUCTOR
   ------------------------------------------------------------------------------*/
-  public function __construct($key,$algorithm = self::DEFAULT_ALGORITHM)
-    {
-      $algos = openssl_get_cipher_methods(true);
-      if(false === array_search($algorithm,$algos))
-        throw new Exception(_('algorithm is not valid'));
+  public function __construct(string $key,string $algorithm = self::DEFAULT_ALGORITHM)
+  {
+    $algos = openssl_get_cipher_methods(true);
+    if (false === array_search($algorithm, $algos))
+      throw new Exception(_('algorithm is not valid'));
 
-      $this->algorithm = $algorithm;
-      $this->key = openssl_digest($key,'sha256',true);
-    }
+    $this->algorithm = $algorithm;
+    $this->key = openssl_digest($key, 'sha256', true);
+  }
 
   /*------------------------------------------------------------------------------
     暗号化  ( 平文 , 暗号文をBASE64エンコードするか？)
   ------------------------------------------------------------------------------*/
-  public function encrypt($plain,$base64encode = true)
-    {
-      $iv = $this->CreateInitializingVector(); 
-      $encrypted = openssl_encrypt(
-        $plain,
-        $this->algorithm,
-        $this->key,
-        OPENSSL_RAW_DATA,
-        $iv
-      );
+  public function encrypt(string $plain, bool $base64encode = true): string
+  {
+    $iv = $this->CreateInitializingVector();
+    $encrypted = openssl_encrypt(
+      $plain,
+      $this->algorithm,
+      $this->key,
+      OPENSSL_RAW_DATA,
+      $iv
+    );
 
-      if(!empty($iv))
-        $encrypted = $iv . $encrypted;
+    if (!empty($iv))
+      $encrypted = $iv . $encrypted;
 
-      return $base64encode ? base64_encode($encrypted) : $encrypted;
-    }
+    return $base64encode ? base64_encode($encrypted) : $encrypted;
+  }
 
   /*------------------------------------------------------------------------------
     復号化  (暗号文 , 指定した暗号文はBASE64エンコードされているか？)
   ------------------------------------------------------------------------------*/
-  public function decrypt($encrypted,$base64decode = true)
-    {
-      $decrypted = '';
-      if(empty($encrypted))
-        return $decrypted;
-
-      if($base64decode)
-        $encrypted = base64_decode($encrypted);
-
-      if(0 < ($ivlen = openssl_cipher_iv_length($this->algorithm)))
-      {
-        $iv = substr($encrypted,0,$ivlen);
-        $encrypted = substr($encrypted,$ivlen);
-      }
-
-      $decrypted = openssl_decrypt(
-        $encrypted,
-        $this->algorithm,
-        $this->key,
-        OPENSSL_RAW_DATA,
-        $iv
-      );
-
+  public function decrypt(string $encrypted,bool $base64decode = true) : string
+  {
+    $iv = '';
+    $decrypted = '';
+    if (empty($encrypted))
       return $decrypted;
+
+    if ($base64decode)
+      $encrypted = base64_decode($encrypted);
+
+    if (0 < ($ivlen = openssl_cipher_iv_length($this->algorithm)))
+    {
+      $iv = substr($encrypted, 0, $ivlen);
+      $encrypted = substr($encrypted, $ivlen);
     }
+
+    $decrypted = openssl_decrypt(
+      $encrypted,
+      $this->algorithm,
+      $this->key,
+      OPENSSL_RAW_DATA,
+      $iv
+    );
+
+    return $decrypted;
+  }
 }
 

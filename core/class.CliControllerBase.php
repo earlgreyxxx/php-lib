@@ -10,20 +10,20 @@
 // Controller for command line interface
 class CliControllerBase extends ControllerBase
 {
-  protected $arguments;
+  protected array $arguments;
 
   //Constructor
-  public function __construct(array $define = array())
+  public function __construct(array $define = [])
   {
-    $this->arguments;
+    $this->arguments = $define;
   }
 
-  protected function createView()
+  protected function createView() : ?ViewBase
   {
     return null;
   }
 
-  protected function getView()
+  protected function getView() : ViewBase
   {
     return $this->view;
   }

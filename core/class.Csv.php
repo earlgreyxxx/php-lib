@@ -1,5 +1,4 @@
-<?php
-/*******************************************************************************
+<?php /**************************************************************************
 
   Wrapper class for SplFileObject(CSV).
     This class is delivered with SplFileObject.
@@ -7,9 +6,11 @@
 ********************************************************************************/
 class Csv extends SplFileObject
 {
-  private static $DEFAULT_OPTIONS = array( 'remove' => true,
-                                           'encoding' => 'SJIS-WIN',
-                                           'mode'   => 'r');
+  private static $DEFAULT_OPTIONS = [
+    'remove' => true,
+    'encoding' => 'SJIS-WIN',
+    'mode'   => 'r'
+  ];
   const CALLABLE_IS_FILTER = 1;
   const CALLABLE_IS_TASK = 2;
 
@@ -18,39 +19,34 @@ class Csv extends SplFileObject
   **************************************************************************/
 
   // create instance from memory(array of string).
-  public static function CreateFromArray(array $lines,$encoding = 'UTF-8')
+  public static function CreateFromArray(array $lines,$encoding = 'UTF-8') : static|false
   {
+    $rv = null;
     $handle = false;
     $csvpath = '';
-    if(defined('TEMPORARY_DIR'))
-      {
-        $csvpath = tempnam(TEMPORARY_DIR,'temp-');
-        $handle = fopen($csvpath,'w');
-        foreach($lines as $line_)
-          fwrite($handle,$line_);
-        fclose($handle);
+    if (defined('TEMPORARY_DIR'))
+      return false;
 
-        return new static($csvpath,array('remove' => true));
-      }
-    else
-      {
-        $handle = tmpfile();
-        foreach($lines as $line_)
-          fwrite($handle,$line_);
+    $csvpath = tempnam(TEMPORARY_DIR, 'temp-');
+    if(!is_readable($csvpath))
+      return false;
 
-        return static::CreateFromStream($handle,$encoding);
-      }
-    
+    $handle = fopen($csvpath, 'w');
+    foreach ($lines as $line_)
+      fwrite($handle, $line_);
+    fclose($handle);
+
+    return new static($csvpath, ['remove' => true]);
   }
   
   /**************************************************************************
     Protected methods & fields.
   **************************************************************************/
   // CSV file path
-  protected $path;
-  protected $options;
+  protected string $path;
+  protected ?array $options = null;
 
-  protected static function prepare(&$filepath,&$options)
+  protected static function prepare(string &$filepath,array &$options) : void
   {
     $path = $filepath . '.utf8';
     $fout = new SplFileObject($path,'w');
@@ -66,7 +62,7 @@ class Csv extends SplFileObject
   }
 
   // constructor & destructor
-  public function __construct($csvpath,array $options = array())
+  public function __construct(string $csvpath,array $options = [])
   {
     $this->options = array_merge(self::$DEFAULT_OPTIONS,$options);
     $this->path = $csvpath;
@@ -108,7 +104,7 @@ class Csv extends SplFileObject
    *  
    *  return value is length of process lines.
   *********************************************************************/
-  public function each($callable, $offset = 0)
+  public function each(callable $callable, int $offset = 0) : mixed
   {
     return $this->read($offset,-1,$callable);
   }
@@ -119,77 +115,76 @@ class Csv extends SplFileObject
     if $callable is set, return value is number of process.
     if $flags is set, $callable is task or filter of csv reading process
   ***********************************************************************/
-  public function read($offset = 0,$length = 0,$callable = null,$flags = self::CALLABLE_IS_TASK)
+  public function read(int $offset = 0,int $length = 0,?callable $callable = null,int $flags = self::CALLABLE_IS_TASK) : mixed
   {
     $rv = false;
-    if($length)
+    if ($length)
+    {
+      $is_task = $callable && is_callable($callable) && (($flags & self::CALLABLE_IS_TASK) == self::CALLABLE_IS_TASK);
+      $is_filter = $callable && is_callable($callable) && (($flags & self::CALLABLE_IS_FILTER) == self::CALLABLE_IS_FILTER);
+
+      $count = 0;
+      $num = $offset;
+      $ite = new LimitIterator($this, $offset, $length);
+      foreach ($ite as $row)
       {
-        $is_task = $callable && is_callable($callable) && (($flags & self::CALLABLE_IS_TASK) == self::CALLABLE_IS_TASK);
-        $is_filter = $callable && is_callable($callable) && (($flags & self::CALLABLE_IS_FILTER) == self::CALLABLE_IS_FILTER);
-        
-        $count = 0;
-        $num = $offset;
-        $ite = new LimitIterator($this, $offset, $length);
-        foreach($ite as $row)
+        $num++;
+        if (is_null($row[0]))
+          continue;
+
+        if ($is_task)
         {
-          $num++;
-          if(is_null($row[0]))
-            continue;
+          if (!is_int($rv))
+            $rv = 0;
 
-          if($is_task)
-            {
-              if(!is_int($rv))
-                $rv = 0;
+          $result = call_user_func_array($callable, array($num, $count++, $row));
+          $rv++;
+          if (intval($result) < 0)
+            break;
+        }
+        else
+        {
+          if (!is_array($rv))
+            $rv = array();
 
-              $result = call_user_func_array($callable,array($num,$count++,$row));
-              $rv++;
-              if(intval($result) < 0)
-                break;
-            }
+          if ($is_filter)
+          {
+            if (call_user_func_array($callable, array($num, $count++, $row)))
+              $rv[] = $row;
+          }
           else
-            {
-              if(!is_array($rv))
-                $rv = array();
-
-              if($is_filter)
-                {
-                  if(call_user_func_array($callable,array($num,$count++,$row)))
-                    $rv[] = $row;
-                }
-              else
-                {
-                  $rv[] = $row;
-                }
-            }
+          {
+            $rv[] = $row;
+          }
         }
       }
+    }
 
     return $rv;
   }
 
   // search pattern in specified field...
-  public function match($pattern,$fields,$offset = 0)
+  public function match(string $pattern,string|array $fields,int $offset = 0) : mixed
   {
     if(!is_array($fields))
       $fields = array($fields);
 
-    $fields = array_filter(function($v) { return is_int($v); },$fields);
+    $fields = array_filter($fields,fn($v) => is_int($v));
 
-    $callback = function($num,$i,$row) use($fields,$pattern,&$matches)
+    $callback = function ($num, $i, $row) use ($fields, $pattern, &$matches) {
+      $haystack = '';
+      foreach ($fields as $f_)
       {
-        $haystack = '';
-        foreach($fields as $f_)
-          {
-            if(array_key_exists($f_,$row))
-              $haystack .= $row[$f_];
-          }
+        if (array_key_exists($f_, $row))
+          $haystack .= $row[$f_];
+      }
 
-        if(!empty($haystack))
-          {
-            if(preg_match($pattern,$haystack,$match))
-              $matches[] = array('line' => $num,'match' => $match,'row' => $row);
-          }
-      };
+      if (!empty($haystack))
+      {
+        if (preg_match($pattern, $haystack, $match))
+          $matches[] = ['line' => $num, 'match' => $match, 'row' => $row];
+      }
+    };
 
     $rv = $this->read($offset,-1,$callback);
     return $rv ? $matches : $rv;
@@ -198,6 +193,6 @@ class Csv extends SplFileObject
   public function getIterator($offset = 0,$length = 0)
   {
     $this->rewind();
-    return $length ? new LimitIterator($this, $offset, $length) : this;
+    return $length ? new LimitIterator($this, $offset, $length) : $this;
   }
 }

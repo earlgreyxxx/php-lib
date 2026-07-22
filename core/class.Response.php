@@ -8,7 +8,7 @@
 *******************************************************************************/
 class Response
 {
-  protected static $Instance;
+  protected static Response $Instance;
   public static function GetInstance()
   {
     if(!isset(static::$Instance))
@@ -17,7 +17,7 @@ class Response
     return static::$Instance;
   }
 
-  protected static $STATUS = array(
+  protected static array $STATUS = [
     '200' => 'OK',
     '201' => 'Created',
     '202' => 'Accepted',
@@ -79,9 +79,10 @@ class Response
     '508' => 'Loop Detected',
     '509' => 'Bandwidth Limit Exceeded',
     '510' => 'Not Extended',
-    '511' => 'Network Authentication Required');
+    '511' => 'Network Authentication Required'
+  ];
 
-  private function checkHeaderSent($headerError = 'HTTP Header was already sent.')
+  private function checkHeaderSent(string $headerError = 'HTTP Header was already sent.') : true
   {
     if(headers_sent())
       throw new Exception($headerError);
@@ -89,13 +90,13 @@ class Response
     return true;
   }
 
-  protected function http_response_code($statuscode)
+  protected function http_response_code(int|string $statuscode) : void
   {
     header(sprintf('HTTP 1.1 %d %s',$statuscode,self::$STATUS[$statuscode]));
   }
 
   // wrapper method of header core function for hash array.
-  public function headers($headers,$replace = true)
+  public function headers(array|string $headers,bool $replace = true) : void
   {
     $rv = false;
     $this->checkHeaderSent();
@@ -118,15 +119,15 @@ class Response
   }
 
   // set CONTENT-TYPE Header
-  public function content_type($mime_type,$replace = true)
+  public function content_type(string $mime_type,bool $replace = true) : void
   {
-    return $this->headers(array('content-type' => $mime_type),$replace);
+    $this->headers(['content-type' => $mime_type],$replace);
   }
 
   // set CONTENT-DISPOSITION Header
-  public function content_disposition($filename,$value = 'attachment' ,$name = '')
+  public function content_disposition(string $filename,string $value = 'attachment' ,string $name = '') : void
   {
-    $additions = array();
+    $additions = [];
     if(!empty($filename))
     {
       $additions[] = sprintf('filename=%s',$filename);
@@ -139,31 +140,33 @@ class Response
     if(count($additions) > 0)
       $addition = sprintf('; %s',implode('; ',$additions));
 
-    return $this->headers(array('content-disposition' => $value . $addition));
+    $this->headers(['content-disposition' => $value . $addition]);
   }
 
   // set LOCATION header
-  public function redirect($url,$params = array(),$suffix = '?')
+  public function redirect(string $url,array $params = [],string $suffix = '?') : void
   {
     $params_string = '';
     if(!empty($params))
       $params_string = $suffix . http_build_query($params);
 
-    return $this->headers(array('location' => sprintf('%s%s',$url,$params_string)));
+    $this->headers(['location' => sprintf('%s%s',$url,$params_string)]);
   }
 
   // set let browser chache is restricted.
-  public function nocache($replace = true)
+  public function nocache(bool $replace = true) : void
   {
-    $headers = array('Cache-Control' => 'no-store',
+    $headers = [
+      'Cache-Control' => 'no-store',
       'Expires'       => 'Wed, 10 Jan 1990 01:01:01 GMT',
-      'Last-Modified' => gmdate("D, d M Y H:i:s").' GMT');
+      'Last-Modified' => gmdate("D, d M Y H:i:s") . ' GMT'
+    ];
 
-    return $this->headers($headers,$replace);
+    $this->headers($headers,$replace);
   }
 
   // set status code
-  public function status($status_code)
+  public function status(int|string $status_code) : void
   {
     if(function_exists('http_response_code'))
       http_response_code($status_code);
@@ -173,32 +176,32 @@ class Response
 
   // wrapper for content type of application
   // -------------------------------------------------------------------------------
-  protected function application($type,$prefix = 'application')
+  protected function application(string $type,string $prefix = 'application') : void
   {
-    return $this->content_type(sprintf('%s/%s',$prefix,$type));
+    $this->content_type(sprintf('%s/%s',$prefix,$type));
   }
-  public function json()
+  public function json() : void
   {
-    return $this->application('json');
+    $this->application('json');
   }
-  public function jsonp()
+  public function jsonp() : void
   {
-    return $this->application('javascript');
+    $this->application('javascript');
   }
-  public function pdf()
+  public function pdf() : void
   {
-    return $this->application('pdf');
+    $this->application('pdf');
   }
-  public function raw()
+  public function raw() : void
   {
-    return $this->application('octed-stream');
+    $this->application('octed-stream');
   }
 
   // wrapper for content type of text
   // -------------------------------------------------------------------------------
-  protected function text($type,$charset = 'UTF-8')
+  protected function text(string $type,string $charset = 'UTF-8') : void
   {
-    return $this->content_type(
+    $this->content_type(
       sprintf(
         'text/%s%s',
         $type,
@@ -206,20 +209,20 @@ class Response
       )
     );
   }
-  public function plain($charset = 'UTF-8')
+  public function plain(string $charset = 'UTF-8') : void
   {
-    return $this->text('plain',$charset);
+    $this->text('plain',$charset);
   }
-  public function html($charset = 'UTF-8')
+  public function html(string $charset = 'UTF-8') : void
   {
-    return $this->text('html',$charset);
+    $this->text('html',$charset);
   }
-  public function javascript($charset = 'UTF-8')
+  public function javascript(string $charset = 'UTF-8') : void
   {
-    return $this->text('javascript',$charset);
+    $this->text('javascript',$charset);
   }
-  public function css($charset = 'UTF-8')
+  public function css(string $charset = 'UTF-8') : void
   {
-    return $this->text('css',$charset);
+    $this->text('css',$charset);
   }
 }

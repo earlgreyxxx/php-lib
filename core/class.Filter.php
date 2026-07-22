@@ -10,7 +10,7 @@
 class Filter extends KeyValueCollection
 {
   private $id = null;
-  private function inserter($name,$callable,$pos = 0,$count = -1)
+  private function inserter(string $name,callable $callable,int $pos = 0,int $count = -1) : string
   {
     $container = &$this->get_container();
     if(!$this->exists($name))
@@ -25,7 +25,7 @@ class Filter extends KeyValueCollection
   }
 
   //コンストラクタ
-  public function __construct($filterID = '',$params = array())
+  public function __construct(string $filterID = '',array $params = [])
   {
     $this->id(empty($filterID) ? str_uniqid() : $filterID);
 
@@ -33,22 +33,22 @@ class Filter extends KeyValueCollection
       $this->set_container($params);
   }
 
-  public function set($k,$v = null,$options = [])
+  public function set(int|string|array $k,mixed $v = null,mixed $options = []) : mixed
   {
     throw new Exception(_('filter can not use get accessor'));
   }
 
-  public function prepend($name,$filter,$count = -1)
+  public function prepend(string $name,callable $filter,int $count = -1) : string|false
   {
     return $this->insert($name,$filter,0,$count);
   }
 
-  public function append($name,$filter,$count = -1)
+  public function append(string $name,callable $filter,int $count = -1) : string|false
   {
     return $this->insert($name,$filter,-1,$count);
   }
 
-  public function insert($name,$filter,$pos,$count = -1)
+  public function insert(string $name,callable $filter,int $pos,int $count = -1) : string|false
   {
     if(!is_callable($filter))
       return false;
@@ -56,7 +56,7 @@ class Filter extends KeyValueCollection
     return $this->inserter($name,$filter,$pos,$count);
   }
 
-  public function fire($name,$params = '')
+  public function fire(string $name,mixed $params = '') : mixed
   {
     $rv = null;
     $result = '';

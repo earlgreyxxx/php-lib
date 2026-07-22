@@ -7,30 +7,30 @@
 class ViewBase
 {
   //Factory 
-  public static function CreateInstance($tmpl = null)
+  public static function CreateInstance(?TemplateBase $tmpl = null) : static
   {
     return new static($tmpl);
   }
 
-  private $tmpl;
+  private ?TemplateBase $tmpl;
 
-  protected $response;
-  protected $header;
-  protected $footer;
-  protected $content;
+  protected ?Response $response;
+  protected array|false $header = false;
+  protected array|false $footer = false;
+  protected array|false $content = false;
 
-  protected $title;
+  protected string|array|null $title = null;
 
   // create template object
-  protected function createTemplate()
+  protected function createTemplate() : TemplateBase
   {
     return TemplateBase::GetInstance(TEMPLATE_DIR,array('url' => TEMPLATE_URL));
   }
 
   // initialize this object
-  protected function init($tmpl)
+  protected function init(?TemplateBase $tmpl) : void
   {
-    if(!($tmpl instanceof TemplateBase))
+    if(empty($tmpl))
     { 
       $tmpl = $this->createTemplate();
       if(!($tmpl instanceof TemplateBase))
@@ -41,86 +41,83 @@ class ViewBase
   }
 
   // $template_values is array ( initialize template object )
-  public function __construct($tmpl = null)
+  public function __construct(?TemplateBase $tmpl = null)
   {
     $this->init($tmpl);
   }
 
   // returns current template object
-  public function getTemplate()
+  public function getTemplate() : ?TemplateBase
   {
     return $this->tmpl;
   }
-  public function setTemplate($template)
+  public function setTemplate(TemplateBase $template) : ?TemplateBase
   {
     $rv = $this->tmpl;
-    if(!($template instanceof TemplateBase))
-      throw new Exception(_('Invalid arguments was given...'));
-
     $this->tmpl = $template;
     return $rv;
   }
-  public function setHeader($template)
+  public function setHeader(array|false $template) : void
   {
     $this->header = $template;
   }
-  public function getHeader()
+  public function getHeader() : array|false
   {
     return $this->header;
   }
 
-  public function setFooter($template)
+  public function setFooter(array|false $template) : void
   {
     $this->footer = $template;
   }
-  public function getFooter()
+  public function getFooter() : array|false
   {
     return $this->footer;
   }
 
-  public function setContent($template)
+  public function setContent(array|false $template) : void
   {
     $this->content = $template;
   }
-  public function getContent()
+  public function getContent() : array|false
   {
     return $this->content;
   }
 
 
-  public function setTitle($title)
+  public function setTitle(string $title) : void
   {
     $this->title = $title;
   }
-  public function addTitle($title)
+  public function addTitle(string|array $title) : bool
   {
     if(empty($title))
       return false;
 
     if(!is_array($this->title))
-      $this->title = empty($this->title) ? array() : array($this->title);
+      $this->title = empty($this->title) ? [] : [$this->title];
 
     if(is_array($title))
       $this->title = array_merge($this->title,$title);
     else
       $this->title[] = $title;
+
+    return true;
   }
 
-  public function getResponse()
+  public function getResponse() : ?Response
   {
     return $this->response;
   }
 
-  public function render()
+  public function render() : void
   {
     $title = $this->title;
-    add_action('title',
-               function() use($title) 
-               {
-                 if(empty($title))
-                   return;
-                 echo is_array($title) ? implode('：',array_reverse($this->title)) : $title;
-               });
+    add_action('title', function() use($title) {
+      if (empty($title))
+        return;
+      echo is_array($title) ? implode('：', array_reverse($this->title)) : $title;
+    });
 
     $tmpl = $this->getTemplate();
     foreach(array($this->getHeader(),$this->getContent(),$this->getFooter()) as $t_)
@@ -143,7 +140,7 @@ class ViewBase
   }
 
   //output JSON data of result upload processing.
-  public function ajax($ar,$is_exit = true)
+  public function ajax(array $ar,bool $is_exit = true) : void
   {
     $response = $this->getResponse();
     $response->nocache();
@@ -155,30 +152,30 @@ class ViewBase
   }
 
   // show 401 Authroization error
-  public function error401($is_exit = true)
+  public function error401(bool $is_exit = true) : void
   {
     $this->error_code(401,$is_exit);
   }
 
   // show 403 Forbidden error
-  public function error403($is_exit = true)
+  public function error403(bool $is_exit = true) : void
   {
     $this->error_code(403,$is_exit);
   }
 
   // show 404 File not found error
-  public function error404($is_exit = true)
+  public function error404(bool $is_exit = true) : void
   {
     $this->error_code(404,$is_exit);
   }
 
   // show 500 Internal Server Error
-  public function error500($is_exit = true)
+  public function error500(bool $is_exit = true) : void
   {
     $this->error_code(500,$is_exit);
   }
 
-  public function error_code(int $status_code,bool $is_exit = true)
+  public function error_code(int $status_code,bool $is_exit = true) : void
   {
     $response = $this->getResponse();
     $response->status($status_code);
@@ -191,7 +188,7 @@ class ViewBase
   }
 
   // show generic error
-  public function error($template,$headers = array(),$is_exit = true)
+  public function error(array $template,array $headers = [],bool $is_exit = true) : void
   {
     if(!is_array($headers))
       $headers = array($headers);

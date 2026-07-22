@@ -8,7 +8,7 @@ trait RowsIteratorImp
   /*------------------------------------------------------------------------------
     Instance members.
   ------------------------------------------------------------------------------*/
-  public function getValue($name,$raw = true)
+  public function getValue(string $name,mixed $raw = true) : mixed
   {
     $rv = false;
     $row = $this->getRow();
@@ -21,7 +21,7 @@ trait RowsIteratorImp
     return $rv;
   }
 
-  public function _imp_print($raw,$name,$before,$after)
+  public function _imp_print(mixed $raw,string $name,string|array $before,string $after) : void
   {
     $options = array_merge(
       $this->default,
@@ -68,17 +68,17 @@ trait RowsIteratorImp
     }
   }
 
-  public function value($name,$before = '',$after = '')
+  public function value(string $name,string|array $before = '',string $after = '') : void
   {
     $this->_imp_print(true,$name,$before,$after);
   }
 
-  public function html($name,$before = '',$after = '')
+  public function html(string $name,string|array $before = '',string $after = '') : void
   {
     $this->_imp_print(false,$name,$before,$after);
   }
 
-  public function move()
+  public function move() : bool
   {
     if($this->first === true)
       $this->first = false;
@@ -91,13 +91,13 @@ trait RowsIteratorImp
   /*----------------------------------------------------------------------
    ex) $obj->valueTo( 'gender', array( 1 => '男', 2 => '女'));
   ----------------------------------------------------------------------*/
-  public function getValueTo($name,$arr)
+  public function getValueTo(int|string $name,array $arr) : mixed
   {
     $val = $this->getValue($name);
     return array_key_exists($val,$arr) ? $arr[$val] : '';
   }
 
-  public function valueTo($name,$arr,$before = '',$after = '')
+  public function valueTo(int|string $name,array $arr,string $before = '',string $after = '') : void
   {
     $rv = $this->getValueTo($name,$arr);
     if(!empty($rv))
@@ -107,7 +107,7 @@ trait RowsIteratorImp
   /*----------------------------------------------------------------------
    ex) value is converted to datetime value with $format.
   ----------------------------------------------------------------------*/
-  public function getDate($name,$format = 'Y/m/d')
+  public function getDate(string $name,string $format = 'Y/m/d')
   {
     $rv = $this->getValue($name);
 
@@ -126,7 +126,7 @@ trait RowsIteratorImp
     return $rv;
   }
 
-  public function date($name,$format = 'Y/m/d',$empty = null)
+  public function date(string $name,$format = 'Y/m/d',mixed $empty = null) : void
   {
     $rv = $this->getDate($name,$format);
     if(empty($rv) && !empty($empty))

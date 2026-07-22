@@ -7,12 +7,12 @@ define('VERSION','unkown');
 /*------------------------------------------------------------------------------
   バージョンを出力
 ------------------------------------------------------------------------------*/
-function version($before = '?v=',$after = '')
+function version(string $before = '?v=',string $after = '') : void
 {
   echo $before,get_version(),$after;
 }
 
-function get_version()
+function get_version() : string
 {
   static $version = null;
 
@@ -24,7 +24,7 @@ function get_version()
     if(file_exists($filepath) && ($content = file_get_contents($filepath)))
     {
       $content = preg_split('/[\r\n]+/',$content);
-      $lines = array();
+      $lines = [];
       foreach($content as $line)
       {
         if(empty($line) || $line[0] === '#')

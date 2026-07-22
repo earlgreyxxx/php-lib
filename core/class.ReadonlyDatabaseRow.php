@@ -10,22 +10,22 @@
 
 class ReadonlyDatabaseRow extends DatabaseRow
 {
-  final public function save(?array $columns = null)
+  final public function save(?array $columns = null) : string|bool
   {
     throw new RuntimeException(_('read only object'));
   }
 
-  final public function delete()
+  final public function delete() : bool
   {
     throw new RuntimeException(_('read only object'));
   }
 
-  final public function __set($name,$value)
+  final public function __set(string $name,mixed $value) : void
   {
     throw new RuntimeException(_('read only object'));
   }
 
-  final public function __unset($name)
+  final public function __unset(string $name) : void
   {
     throw new RuntimeException(_('can not unset property'));
   }

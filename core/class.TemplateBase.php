@@ -7,14 +7,15 @@
 
 class TemplateBase extends KeyValueCollection
 {
-  protected $path;
-  protected $url;
-  protected $rows = null;
-  protected $header;
-  protected $footer;
-  protected $id;
+  protected string $path;
+  protected string $url;
+  protected mixed $rows = null;
+  protected mixed $header;
+  protected mixed $footer;
+  protected string $id;
+  protected ?array $iterators;
 
-  protected function get_filepath($name,$suffix = '')
+  protected function get_filepath(string $name,string $suffix = '') : string
   {
     $template_filename = sprintf('%s/%s',$this->path,$name);
 
@@ -28,7 +29,7 @@ class TemplateBase extends KeyValueCollection
     return $template_filename . '.php';
   }
 
-  public function __construct($name,$params = array())
+  public function __construct(string $name,array $params = [])
   {
     if(empty($name) || !file_exists($name) || !is_dir($name))
       throw new Exception(_('invalid first parameter was given'));
@@ -43,21 +44,21 @@ class TemplateBase extends KeyValueCollection
     $this->id = str_uniqid($name.'-');
   }
 
-  public function get_dir()
+  public function get_dir() : string
   {
     return $this->path;
   }
 
-  public function get_url()
+  public function get_url() : string
   {
     return $this->url;
   }
-  public function url()
+  public function url() : void
   {
     echo $this->get_url();
   }
 
-  public function value($k,$subkey = '')
+  public function value(int|string $k,string|array $subkey = '') : void
   {
     $params = array(
       'suffix' => '',
@@ -103,7 +104,7 @@ class TemplateBase extends KeyValueCollection
     }
   }
 
-  public function date($key,$datefmt = 'Y年m月d日')
+  public function date(int|string $key,string $datefmt = 'Y年m月d日') : void
   {
     if(isset($this[$key]) && !empty($this[$key]))
     {
@@ -112,7 +113,7 @@ class TemplateBase extends KeyValueCollection
     }
   }
 
-  private function scramble($scramble,$in)
+  private function scramble(mixed $scramble,mixed $in) : mixed
   {
     $rv = $in;
     if($scramble !== false)
@@ -129,7 +130,7 @@ class TemplateBase extends KeyValueCollection
     return $rv;
   }
 
-  public function html($k,$subkey = '')
+  public function html(int|string $k,string|array $subkey = '') : void
   {
     $params = array(
       'html' => true,
@@ -149,7 +150,7 @@ class TemplateBase extends KeyValueCollection
     ex) valueTo( 'gender', array( 1 => '男', 2 => '女')); 
       if container['gender'] is '1', output is '男'...
   ------------------------------------------------------------------------------*/
-  public function valueTo($name,array $hash,array $params = array())
+  public function valueTo(int|string $name,array $hash,array $params = array()) : void
   {
     $default_params = array('before' => '','after' => '');
     $params = array_merge($default_params,$params);
@@ -165,7 +166,7 @@ class TemplateBase extends KeyValueCollection
   }
 
   // if match , output string
-  public function valueIf($key,$match,$output,$default = '')
+  public function valueIf(int|string $key,mixed $match,mixed $output,string $default = '') : void
   {
     $rv = $default;
     if(is_callable($match))
@@ -183,28 +184,30 @@ class TemplateBase extends KeyValueCollection
 
   // merge (n => v,....) to container. pair("n-container[n]" => v) is merged to container  
   // purpose of this methos is ... used for select tag or input[radio] tags...
-  public function merge(array $nv)
+  public function merge(array $nv) : bool
   {
     if(count($nv) == 0)
       return false;
 
-    foreach($nv as $n => $v)
-      {
-        $rv = $this->get($n);
-        if(!empty($rv) && (is_string($rv) || is_int($rv)))
-          $this->set("$n-$rv",$v);
-      }
+    foreach ($nv as $n => $v)
+    {
+      $rv = $this->get($n);
+      if (!empty($rv) && (is_string($rv) || is_int($rv)))
+        $this->set("$n-$rv", $v);
+    }
+
+    return true;
   }
 
   // existing check template name
-  public function file_exists($templatename,$suffix = '')
+  public function file_exists(string $templatename,string $suffix = '') : bool
   {
     $templatepath = $this->get_filepath($templatename,$suffix);
     return file_exists($templatepath);
   }
 
   // include template file with template name and suffix...
-  public function apply($templatename,$suffix = '',$multitime = false)
+  public function apply(string $templatename,string $suffix = '',bool $multitime = false) : void
   {
     $filepath = $this->get_filepath($templatename,$suffix);
 
@@ -219,7 +222,7 @@ class TemplateBase extends KeyValueCollection
   }
 
   // include template file with template name and suffix...
-  public function insert($templatename,$suffix,array $values,$multitime = true)
+  public function insert(string $templatename,string $suffix,array $values,bool $multitime = true) : void
   {
     $filepath = $this->get_filepath($templatename,$suffix);
 
@@ -235,7 +238,7 @@ class TemplateBase extends KeyValueCollection
   }
 
   // unlike apply, 1st argument is template file path instead of temlatename
-  public function assign($templatefile,$multitime = false)
+  public function assign(string $templatefile,bool $multitime = false) : void
   {
     if(file_exists($templatefile))
     {
@@ -248,7 +251,7 @@ class TemplateBase extends KeyValueCollection
   }
 
   // set new rows iterator and returns old one
-  public function setRows($items,$flag = 0)
+  public function setRows(mixed $items,int $flag = 0) : mixed
   {
     $rv = $this->rows;
     if($items instanceof RowsIterator || $items instanceof RowsGenerator)
@@ -275,13 +278,13 @@ class TemplateBase extends KeyValueCollection
   }
 
   // rows iterator getter
-  public function getRows()
+  public function getRows() : mixed
   {
     return $this->rows;
   }
 
   // check this object has rows iterator and rows count is not 0
-  public function haveRows()
+  public function haveRows() : mixed
   {
     $rv = false;
     if($this->rows instanceof RowsGenerator || ($this->rows instanceof RowsIterator && $this->rows->count() > 0))
@@ -289,5 +292,4 @@ class TemplateBase extends KeyValueCollection
 
     return $rv;
   }
-
 }

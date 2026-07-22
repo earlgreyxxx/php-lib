@@ -4,7 +4,7 @@
 *******************************************************************************/
 class DebugUtils
 {
-  private static function GetPeekMemoryText(array $options = [])
+  private static function GetPeekMemoryText(array $options = []) : string
   {
     $before = $options['before'] ?? '';
     $after = $options['after'] ?? '';
@@ -26,7 +26,7 @@ class DebugUtils
       ) ; 
   }
 
-  public static function PeekMemoryToFile(string $filepath = '-',array $options = [])
+  public static function PeekMemoryToFile(string $filepath = '-',array $options = []) : int|false
   {
     $rv = true;
     if(empty($filepath))

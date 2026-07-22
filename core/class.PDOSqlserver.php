@@ -16,19 +16,19 @@ abstract class PDOSqlserver extends PDOExtension
   /*------------------------------------------------------------------------------
     Statics
   ------------------------------------------------------------------------------*/
-  protected static $CONDITION = 'having ';
-  protected static $SELECT_LOCK = '';
-  protected static $QUERY_TIMEOUT = 30;
+  protected static string $CONDITION = 'HAVING ';
+  protected static string $SELECT_LOCK = '';
+  protected static int $QUERY_TIMEOUT = 30;
 
   /*------------------------------------------------------------------------------
     Implements.
   ------------------------------------------------------------------------------*/
-  public function begin()
+  public function begin() : bool
   {
     return $this->beginTransaction();
   }
 
-  public function exists($table)
+  public function exists(string $table) : bool
   {
     $rv = false;
     $sql = sprintf('SELECT COUNT(*) FROM dbo.sysobjects WHERE id = object_id(%s) AND OBJECTPROPERTY( id, %s ) = 1',
@@ -47,9 +47,10 @@ abstract class PDOSqlserver extends PDOExtension
     return $rv;
   }
 
-  public function getTables($get_option = 0)
+  public function getTables(mixed $get_option = 0) : array
   {
     $rv = false;
+    $fn = null;
     $sql = <<<__SQL_STATEMENT__
       SELECT 
       (sys_schema.name+'.'+sys_objects.name) as name,
@@ -63,10 +64,10 @@ __SQL_STATEMENT__;
 
     if($sth = $this->query($sql))
     {
-      $rv = array();
+      $rv = [];
       if($get_option > 0)
       {
-        $keys = array();
+        $keys = [];
         if($get_option & PDOExtension::GET_NAME)
           $keys[] = 'name';
         if($get_option & PDOExtension::GET_CREATE)
@@ -95,6 +96,10 @@ __SQL_STATEMENT__;
             $rv[] = $items;
           };
         }
+        else
+        {
+          throw new RuntimeException(_('invalid keys'));
+        }
 
         while($row = $sth->fetch(PDO::FETCH_ASSOC))
           call_user_func($fn,$row);
@@ -110,11 +115,11 @@ __SQL_STATEMENT__;
     return $rv;
   }
 
-  public function getViews()
+  public function getViews() : array
   {
     $sql = 'SELECT TABLE_SCHEMA,TABLE_NAME FROM INFORMATION_SCHEMA.VIEWS';
 
-    $rv = array();
+    $rv = [];
     if(false != ($sth = $this->query($sql)))
     {
       $views = $sth->fetchAll(PDO::FETCH_NUM);
@@ -128,7 +133,7 @@ __SQL_STATEMENT__;
     return $rv;
   }
 
-  public function getColumns($table)
+  public function getColumns(string $table) : array
   {
     $rv = false;
     $obj = explode('.',$table);
@@ -163,7 +168,7 @@ __SQL_STATEMENT__;
     return $rv;
   }
 
-  public function getInfo($table)
+  public function getInfo(string $table) : array
   {
     $rv = array('table' => array(),'column' => array());
     $sql = sprintf('SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = %s',$this->quote($table));
@@ -186,7 +191,7 @@ __SQL_STATEMENT__;
     return $rv;
   }
 
-  public function getLastUpdate($table,$fmt = 'Y/m/d')
+  public function getLastUpdate(string $table,string $fmt = 'Y/m/d') : string
   {
     $rv = false;
     if(!empty($table))
@@ -208,9 +213,9 @@ __SQL_STATEMENT__;
   }
 
   //テーブル生成
-  public function createTable($table,$columns)
+  public function createTable(string $table,array $columns) : int|false
   {
-    $values = array( 'AUTOINCREMENT' => 'IDENTITY(1,1)' );
+    $values = [ 'AUTOINCREMENT' => 'IDENTITY(1,1)' ];
 
     $sql = sprintf(
       'CREATE TABLE %s(%s)',
@@ -218,11 +223,11 @@ __SQL_STATEMENT__;
       $this->formatString($columns,$values,','.RN)
     );
 
-    return $this->exec($sql) ? 1 : 0;
+    return $this->exec($sql);
   }
 
   //インデックス作成
-  public function createIndex($table,$index,$columns,$unique = false,$grant = 'alter')
+  public function createIndex(string $table,string $index,array $columns,bool $unique = false,string $grant = 'alter') : int|false
   {
     $sql = sprintf(
       'CREATE %s %s ON %s(%s)',
@@ -232,11 +237,11 @@ __SQL_STATEMENT__;
       implode(',',$columns)
     );
 
-    return $this->exec($sql) ? 1 : 0;
+    return $this->exec($sql);
   }
 
   // 外部キー制約
-  public function setForeignKeyConstraint(string $table,?array $params = null)
+  public function setForeignKeyConstraint(string $table,?array $params = null) : int|false
   {
     $constraint = (object)$params;
     if(empty($constraint->name))
@@ -269,12 +274,12 @@ __SQL_STATEMENT__;
   }
 
   //未実装
-  public function get_selectlock()
+  public function get_selectlock() : string
   {
     return static::$SELECT_LOCK;
   }
 
-  public function columnconcat($table,$column1,$column2,$column3,$column4,$key)
+  public function columnconcat(string $table,string $column1,string $column2,string $column3,string $column4,string $key) : string
   {
     $rv = sprintf('(SELECT CASE WHEN COUNT(%2$s) > 1 THEN CONCAT(\';\',(SELECT %2$s + \';\' FROM %3$s WHERE %4$s = %5$s AND %1$s = %6$s for xml path(\'\'))) ELSE (SELECT %2$s FROM %3$s WHERE %4$s = %5$s AND %1$s = %6$s) END FROM %3$s WHERE %4$s = %5$s AND %1$s = %6$s) AS %7$s',
       $this->quoteColumns($column1),
@@ -289,12 +294,13 @@ __SQL_STATEMENT__;
   }
 
   //未実装
-  public function groupconcat($column)
+  public function groupconcat(string $column) : string
   {
     throw new Exception(_('SQLServer can not understand group_concat'));
+    return '';
   }
 
-  private function concat2008($columns,$as = '')
+  private function concat2008(array $columns,string $as = '') : string
   {
     $rv = count($columns) > 1 ? sprintf('(%s)',implode(' + ',$this->quoteColumns($columns))) : $this->quoteColumns($columns[0]);
     if(!empty($as))
@@ -303,7 +309,7 @@ __SQL_STATEMENT__;
     return $rv;
   }
 
-  private function concat2012($columns,$as = '')
+  private function concat2012(array $columns,string $as = '') : string
   {
     $rv = count($columns) > 1 ? sprintf('CONCAT(%s)',implode(',',$this->quoteColumns($columns))) : $this->quoteColumns($columns[0]);
     if(!empty($as))
@@ -311,14 +317,15 @@ __SQL_STATEMENT__;
 
     return $rv;
   }
-  public function concat($columns,$as = '',$is2008 = false)
+
+  public function concat(array $columns,string $as = '',bool $is2008 = false) : string
   {
     $methodname = $is2008 === true ? 'concat2008' : 'concat2012';
     return call_user_func([$this,$methodname],$columns,$as);
   }
 
   //only SQLServer 2012 or heigher version.
-  public function limit($num,$pos,$params = array())
+  public function limit(int $num,int $pos,array $params = []) : string
   {
     if($pos > 0 && $num > 0)
       $rv = sprintf('OFFSET %d ROWS FETCH NEXT %d ROWS ONLY',$pos,$num);
@@ -338,30 +345,23 @@ __SQL_STATEMENT__;
     return $rv;
   }
 
-  public function quoteX($x)
+  public function quoteX(string $x) : string
   {
     return sprintf('[%s]',$x);
   }
 
-  protected function quoteN($n,$hint = PDO::PARAM_STR)
+  protected function quoteN(string $n,int $hint = PDO::PARAM_STR) : string
   {
     return 'N'.parent::quote($n,$hint);
   }
 
   // for PHP8 ～
-  #[\ReturnTypeWillChange]
   public function quote(string $string,int $type = PDO::PARAM_STR) : string|false
   {
     return $this->quoteN($string,$type);
   }
 
-  // for ～ PHP7.4
-  //public function quote($string,$type = null)
-  //{
-  //  return $this->quoteN($string,$type);
-  //}
-
-  public function procedure($name,$arguments,$arguments_are_quoted = false)
+  public function procedure(string $name,array $arguments,bool $arguments_are_quoted = false) : string
   {
     if(!$arguments_are_quoted)
     {
@@ -374,7 +374,7 @@ __SQL_STATEMENT__;
     return sprintf('EXEC %s %s',$name,implode(',',$arguments));
   }
 
-  public function like($search_column,$str,$multimode = 'and',$unicode = false)
+  public function like(string $search_column,string $str,string $multimode = 'and',bool $unicode = false) : string
   {
     $words = preg_split('/\s+/u',$str);
     $rv = array();
@@ -399,7 +399,7 @@ __SQL_STATEMENT__;
     return implode(" $multimode ",$rv);
   }
 
-  public function escape($str)
+  public function escape(string $str) : string
   {
     return str_replace(
       array('[','%','_'),
@@ -408,4 +408,3 @@ __SQL_STATEMENT__;
     );
   }
 }
-

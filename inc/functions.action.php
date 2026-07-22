@@ -9,7 +9,7 @@
 /*-------------------------------------------------------------------------------
  アクションオブジェクトの生成と取得
 ------------------------------------------------------------------------------*/
-function get_action($actionID = '')
+function get_action(string $actionID = '') : Action
 {
   static $aid = null;
 
@@ -22,18 +22,18 @@ function get_action($actionID = '')
 /*-------------------------------------------------------------------------------
  アクション登録
 ------------------------------------------------------------------------------*/
-function add_action($name,$callback)
+function add_action(string $name,callable $callback) : void
 {
-  return get_action()->add($name,$callback);
+  get_action()->add($name,$callback);
 }
 
-function add_actions(array $array)
+function add_actions(array $array) : void
 {
   foreach($array as $key => $func_name)
     add_action($key,$func_name);
 }
 
-function clear_actions($action_name)
+function clear_actions(string $action_name) : void
 {
   get_action()->delete($action_name);
 }
@@ -41,7 +41,7 @@ function clear_actions($action_name)
 /*-------------------------------------------------------------------------------
  アクション実行
 ------------------------------------------------------------------------------*/
-function do_action($name,$args = array())
+function do_action(string $name,array $args = []) : mixed
 {
   return get_action()->fire($name,$args);
 }
@@ -50,7 +50,7 @@ function do_action($name,$args = array())
 /*-------------------------------------------------------------------------------
  フィルターオブジェクトの生成と取得
 ------------------------------------------------------------------------------*/
-function get_filter($filterID = '')
+function get_filter(string $filterID = '') : Filter
 {
   static $fid = null;
 
@@ -63,33 +63,33 @@ function get_filter($filterID = '')
 /*-------------------------------------------------------------------------------
  フィルター登録
 ------------------------------------------------------------------------------*/
-function add_filter($name,$callback,$priority = -1,$count = -1)
+function add_filter(string $name,callable $callback,int $priority = -1,int $count = -1) : string
 {
   return get_filter()->insert($name,$callback,$priority,$count);
 }
 
-function addonce_filter($name,$callback)
+function addonce_filter(string $name,callable $callback) : string|false
 {
   return get_filter()->append($name,$callback,1);
 }
 
-function append_filter($name,$callback,$count = -1)
+function append_filter(string $name,callable $callback,int $count = -1) : string|false
 {
   return get_filter()->append($name,$callback,$count);
 }
 
-function prepend_filter($name,$callback,$count = -1)
+function prepend_filter(string $name,callable $callback,int $count = -1) : string|false
 {
   return get_filter()->prepend($name,$callback,$count);
 }
 
-function add_filters(array $array,$count = -1)
+function add_filters(array $array,int $count = -1) : void
 {
   foreach($array as $key => $func_name)
     append_filter($key,$func_name,$count);
 }
 
-function clear_filter($filter_name)
+function clear_filter(string $filter_name) : void
 {
   get_filter()->delete($filter_name);
 }
@@ -97,7 +97,7 @@ function clear_filter($filter_name)
 /*-------------------------------------------------------------------------------
  フィルター実行
 ------------------------------------------------------------------------------*/
-function do_filter($name,$initial = '')
+function do_filter(string $name,mixed $initial = '') : mixed
 {
   return get_filter()->fire($name,$initial);
 }

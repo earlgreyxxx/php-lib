@@ -8,20 +8,22 @@ class RowsIterator extends ArrayIterator
   use RowsIteratorImp;
 
   //デフォルトオプション
-  protected $default = array('before' => '',
-                             'after'  => '',
-                             'empty'  => '',
-                             'delimitor' => '｜',
-                             'bool'   => false,
-                             'scramble' => false,
-                             'filter' => false );
+  protected array $default = [
+    'before' => '',
+    'after'  => '',
+    'empty'  => '',
+    'delimitor' => '｜',
+    'bool'   => false,
+    'scramble' => false,
+    'filter' => false
+  ];
 
-  protected $first = true;
+  protected bool $first = true;
 
   /*------------------------------------------------------------------------------
     Constructor
   ------------------------------------------------------------------------------*/
-  public function __construct($rows,$flag = 0,array $params = array())
+  public function __construct(array $rows,int $flag = 0,array $params = [])
     {
       if(!empty($params))
         $this->default = array_merge($this->default,$params);
@@ -34,13 +36,13 @@ class RowsIterator extends ArrayIterator
   ------------------------------------------------------------------------------*/
 
   // alias to current()
-  public function getRow()
+  public function getRow() : array
   {
     $rv = $this->current();
     return ($rv instanceof stdClass) ? (array)$rv : $rv;
   }
 
-  public function move()
+  public function move() : bool
   {
     if($this->first === true)
       $this->first = false;
@@ -51,7 +53,7 @@ class RowsIterator extends ArrayIterator
   }
 
   // get next value but no proceed pointer
-  public function peek()
+  public function peek() : mixed
   {
     $ckey = $this->key();
     if(is_numeric($ckey))

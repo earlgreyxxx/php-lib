@@ -10,17 +10,17 @@
 
 class ReadonlyDatabaseRows extends DatabaseRows
 {
-  protected function initialize()
+  protected function initialize() : void
   {
     parent::initialize();
     $this->setRowClass('ReadonlyDatabaseRow');
   }
 
-  final public function offsetSet($offset,$value)
+  final public function offsetSet(mixed $offset,mixed $value) : void
   {
     throw new RuntimeException(_('this object is read only attribute'));
   }
-  final public function offsetUnset($offset)
+  final public function offsetUnset(mixed $offset) : void
   {
     throw new RuntimeException(_('this object is read only attribute'));
   }

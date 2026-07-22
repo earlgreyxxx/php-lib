@@ -10,7 +10,7 @@ abstract class Model
 {
   // Statics --------------------------------------------------------------
   // Create and Get accessor for singleton instance
-  public static function GetInstance(array $params = array())
+  public static function GetInstance(array $params = []) : static
   {
     static $instances = null;
     $classname = get_called_class();
@@ -24,25 +24,25 @@ abstract class Model
   }
 
   // Instances ------------------------------------------------------------
-  protected $handle;
-  protected function getHandle()
+  protected PDOExtension $handle;
+  protected function getHandle() : PDOExtension
   {
     return $this->handle;
   }
-  protected function setHandle($handle)
+  protected function setHandle(PDOExtension $handle) : static
   {
     $this->handle = $handle;
     return $this;
   }
 
   // constructor
-  public function __construct(array $params = array())
+  public function __construct(array $params = [])
   {
-    if(isset($params['handle']))
+    if(isset($params['handle']) && ($params['handle'] instanceof PDOExtension))
       $this->setHandle($params['handle']);
   }
 
-  public function getIterator()
+  public function getIterator() : mixed
   {
     return false;
   }

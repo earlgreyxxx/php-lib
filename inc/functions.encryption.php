@@ -1,5 +1,4 @@
-<?php
-/*******************************************************************************
+<?php /*************************************************************************
 
   可逆暗号/ダイジェストを扱う関数
 
@@ -7,16 +6,16 @@
 
 *******************************************************************************/
 
-function get_cipher($key,$algo = ReversibleEncryption::DEFAULT_ALGORITHM)
+function get_cipher(string $key,string $algo = ReversibleEncryption::DEFAULT_ALGORITHM) : ReversibleEncryption
 {
-  static $ciphers = array();
+  static $ciphers = [];
   if(!isset($ciphers[$key]))
     $ciphers[$key] = new ReversibleEncryption($key,$algo);
 
   return $ciphers[$key];
 }
 
-function str_encrypt($plain,$key,$base64encode = true,$algo = ReversibleEncryption::DEFAULT_ALGORITHM)
+function str_encrypt(string $plain,string $key,bool $base64encode = true,string $algo = ReversibleEncryption::DEFAULT_ALGORITHM) : string|false
 {
   if(empty($key))
     throw new Exception(_('key length must not be zero.'));
@@ -24,7 +23,7 @@ function str_encrypt($plain,$key,$base64encode = true,$algo = ReversibleEncrypti
   return get_cipher($key,$algo)->encrypt($plain,$base64encode);
 }
 
-function str_decrypt($encrypted,$key,$base64decode = true,$algo = ReversibleEncryption::DEFAULT_ALGORITHM)
+function str_decrypt(string $encrypted,string $key,bool $base64decode = true,string $algo = ReversibleEncryption::DEFAULT_ALGORITHM) : string|false
 {
   if(empty($key))
     throw new Exception(_('key length must not be zero.'));
@@ -33,36 +32,36 @@ function str_decrypt($encrypted,$key,$base64decode = true,$algo = ReversibleEncr
 }
 
 // generate uniqid by time slicing(decrypt and encrypt key is time based string)
-function get_time_slice_uniqid()
+function get_time_slice_uniqid() : string
 {
   static $rv = null;
   static $times = 0;
   $delta = defined('FILE_TIME_SLICE') ? FILE_TIME_SLICE : 30 * 60;
-  $current = floor(time() / $delta); 
+  $current = floor(time() / $delta);
 
-  if(empty($rv) || $times !== $current)
-    {
-      $times = $current;
-      $seed = defined('FILE_SEED') ? FILE_SEED : openssl_digest(get_version(),'sha256',true);
-      if(!empty($_SERVER['HTTP_HOST']))
-        $seed = $_SERVER['HTTP_HOST'] . $seed;
+  if (empty($rv) || $times !== $current)
+  {
+    $times = $current;
+    $seed = defined('FILE_SEED') ? FILE_SEED : openssl_digest(get_version(), 'sha256', true);
+    if (!empty($_SERVER['HTTP_HOST']))
+      $seed = $_SERVER['HTTP_HOST'] . $seed;
 
-      $seed .= $current;
+    $seed .= $current;
 
-      $rv = md5($seed);
-    }
+    $rv = md5($seed);
+  }
   
   return $rv;
 }
 
-function str_encrypt_ts($plain,$is_hex = true)
+function str_encrypt_ts(string $plain,bool $is_hex = true) : string
 {
   $key = get_time_slice_uniqid();
   $rv = str_encrypt($plain,$key,false);
   return $is_hex ? bin2hex($rv) : $rv;
 }
 
-function str_decrypt_ts($encrypted,$is_hex = true)
+function str_decrypt_ts(string $encrypted,bool $is_hex = true) : string|false
 {
   $key = get_time_slice_uniqid();
 
@@ -75,19 +74,19 @@ function str_decrypt_ts($encrypted,$is_hex = true)
 /*------------------------------------------------------------------------------
  blowfish 与えられた文字列とコストからcrypt関数で使用するBlowfishハッシュを返す
 ------------------------------------------------------------------------------*/
-function blowfish($plain, $cost = 4)
+function blowfish(string $plain, int $cost = 4) : string
 {
   // Blowfishのソルトに使用できる文字種
   static $chars = null;
-  if($chars === null)
+  if ($chars === null)
     $chars = array_merge(range('a', 'z'), range('A', 'Z'), array('.', '/'));
 
   // ソルトを生成（上記文字種からなるランダムな22文字）
   $salt = '';
   for ($i = 0; $i < 22; $i++)
-    {
-      $salt .= $chars[mt_rand(0, count($chars) - 1)];
-    }
+  {
+    $salt .= $chars[mt_rand(0, count($chars) - 1)];
+  }
 
   // コストの前処理
   $cost = intval($cost);
@@ -96,9 +95,10 @@ function blowfish($plain, $cost = 4)
   elseif ($cost > 31)
     $cost = 31;
 
-  return crypt($plain, sprintf('$2a$%02d$%s',$cost,$salt));
+  return crypt($plain, sprintf('$2a$%02d$%s', $cost, $salt));
 }
-function crypt_blowfish($plain,$cost = 4)
+
+function crypt_blowfish(string $plain,int $cost = 4) : string
 {
   return blowfish($plain,$cost);
 }
@@ -108,22 +108,18 @@ function crypt_blowfish($plain,$cost = 4)
   二つの引数($hint1,$hint2)に依存するキーを作成します。
   $callable：キー生成アルゴリズム関数。指定しない場合はダイジェスト関数。
 ------------------------------------------------------------------------------*/
-function create_key($hint1,$hint2,$callable = null)
+function create_key(string $hint1,string $hint2,?callable $callable = null) : string
 {
   $rv = '';
   $hint = sprintf('%s:%s',$hint1,$hint2);
 
-  if(!empty($callable))
-    {
-      if($callable === 'crypt')
-        {
-          return crypt_blowfish($hint);
-        }
-      else if(is_callable($callable))
-        {
-          return call_user_func($callable,$hint1,$hint2);
-        }
-    }
+  if (!empty($callable))
+  {
+    if ($callable === 'crypt')
+      return crypt_blowfish($hint);
+    else if (is_callable($callable))
+      return call_user_func($callable, $hint1, $hint2);
+  }
 
   return sha1($hint);
 }
@@ -131,7 +127,7 @@ function create_key($hint1,$hint2,$callable = null)
 /*------------------------------------------------------------------------------
   数字をスクランブルする。
 -------------------------------------------------------------------------------*/
-function scramble($seed) {
+function scramble(int $seed) {
   $hash_keys = array(0xb47fa8c6, 0xa8c81029);
 
   $value = $seed;
@@ -148,5 +144,14 @@ function scramble($seed) {
 -------------------------------------------------------------------------------*/
 function str_uniqid(string $prefix = '',bool $dummy = false) : string
 {
-  return $prefix . sha1(random_bytes(256));
+  return $prefix . sha1(random_bytes(32));
+}
+
+
+/*------------------------------------------------------------------------------
+  uniqid(string $prefix = "", bool $more_entropy = false) : string 関数の代替
+-------------------------------------------------------------------------------*/
+function sha256(string $str,bool $is_bin = false)
+{
+  return hash('sha256', $str, $is_bin);
 }

@@ -110,7 +110,7 @@ class DB
   public static bool $SQLSERVER_IS_2008 = false;
 
   private static array $Errors = [];
-  public static function SetErrorInfo($mixed) : void
+  public static function SetErrorInfo(mixed $mixed) : void
   {
     self::$Errors[] = $mixed;
   }

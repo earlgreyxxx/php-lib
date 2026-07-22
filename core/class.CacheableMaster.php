@@ -15,24 +15,24 @@ class CacheableMaster extends Master implements Cacheable
 {
   protected static $DEFAULT_OPTION = array('ttl' => 86400, 'type' => 'apcu','key_prefix' => 'Master-');
 
-  protected $Key;
-  protected $Type;
-  protected $Prefix;
-  protected $TTL;
+  protected string $Key;
+  protected string $Type;
+  protected string $Prefix;
+  protected int $TTL;
 
-  public function __construct($pdo,$tablename,$options =  array())
+  public function __construct(PDOExtension $pdo,string $tablename,array $options = [])
   {
     $options = array_merge(static::$DEFAULT_OPTION,$options);
 
     $this->Key = md5($options['key_prefix'].$tablename);
-    $this->Prefix = $options['key_prefix'];
-    $this->TTL = $options['ttl'];
-    $this->Type = $options['type'];
+    $this->Prefix = strval($options['key_prefix']);
+    $this->TTL = intval($options['ttl']);
+    $this->Type = strval($options['type']);
 
     parent::__construct($pdo,$tablename,$options);
   }
 
-  protected function init()
+  protected function init() : void
   {
     if(!function_exists('apcu_exists'))
       throw new Exception('not support APCu');
@@ -48,25 +48,25 @@ class CacheableMaster extends Master implements Cacheable
       $this->setData();
   }
 
-  public function cacheStore(array $data)
+  public function cacheStore(array $data) : bool
   {
     return apcu_store($this->Key,$data,$this->TTL);
   }
-  public function cacheFetch()
+  public function cacheFetch() : mixed
   {
     return apcu_fetch($this->Key);
   }
-  public function cacheClear()
+  public function cacheClear() : bool
   {
-    apcu_clear_cache();
+    return apcu_clear_cache();
   }
-  public function cacheExists()
+  public function cacheExists() : bool
   {
     return apcu_exists($this->Key);
   }
 
 
-  public function setData(?array $data = null)
+  public function setData(?array $data = null) : true
   {
     if(empty($data))
       $data = $this->selector();
@@ -77,43 +77,44 @@ class CacheableMaster extends Master implements Cacheable
 
     return $rv;
   }
-  public function getData()
+  public function getData() : ?array
   {
-    if(!$this->cacheExists($this->Key))  
+    if(!$this->cacheExists())  
       $this->setData();
+    $rv = $this->cacheFetch();
 
-    return $this->cacheFetch();
+    return is_array($rv) ? $rv : [];
   }
 
-  public function clearData()
+  public function clearData() : void
   {
     if($this->cacheExists())
-      $this->clearCache();
+      $this->cacheClear();
   }
 
-  public function refreshData()
+  public function refreshData() : void
   {
     $this->clearData();
     $this->setData();
   }
 
-  public function getCacheType()
+  public function getCacheType() : string
   {
     return $this->Type;
   }
-  public function getTTL()
+  public function getTTL() : int
   {
     return $this->TTL;
   }
-  public function setTTL($sec)
+  public function setTTL(int $sec) : void
   {
     $this->TTL = $sec;
   }
-  public function getCacheKeyPrefix()
+  public function getCacheKeyPrefix() : string
   {
     return $this->Prefix;
   }
-  public function setCacheKeyPrefix($prefix_str)
+  public function setCacheKeyPrefix(string $prefix_str) : void
   {
     $this->Prefix = $prefix_str;
   }

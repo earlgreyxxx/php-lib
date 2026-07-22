@@ -16,7 +16,7 @@ class PDOSqlsrv extends PDOSqlserver
   /*------------------------------------------------------------------------------
     Statics
   ------------------------------------------------------------------------------*/
-  protected static $DBM = 'sqlsrv';
+  protected static string $DBM = 'sqlsrv';
 
   /*------------------------------------------------------------------------------
     Instances
@@ -26,7 +26,7 @@ class PDOSqlsrv extends PDOSqlserver
   /*------------------------------------------------------------------------------
     Constructor
   ------------------------------------------------------------------------------*/
-  public function __construct($dsn,$username='',$password='',$options = array())
+  public function __construct(string $dsn,string $username='',string $password='',array $options = [])
     {
       if(!preg_match('/^sqlsrv:/',$dsn))
         throw new Exception(_('Invalid dsn... This PDO Extension require "sqlsrv:" prefix'));

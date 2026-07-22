@@ -12,7 +12,7 @@
  入力などのスーパーグローバル変数を得るラッパー関数。
 
 ------------------------------------------------------------------------------*/
-function &get_inputs($type = '')
+function &get_inputs(string $type = '') : array|false
 {
   $rv = false;
   $type = strtolower($type);
@@ -44,7 +44,7 @@ function &get_inputs($type = '')
   リクエストを得る
 
 ------------------------------------------------------------------------------*/
-function &get_request($request = null)
+function &get_request(?array $request = null) : array
 {
   static $r = null;
 
@@ -64,7 +64,7 @@ function &get_request($request = null)
   リクエストを得る（get/post/cookie)
 
 ------------------------------------------------------------------------------*/
-function &get_post($posts = null)
+function &get_post(?array $posts = null) : array
 {
   static $p = null;
 
@@ -79,7 +79,7 @@ function &get_post($posts = null)
   return $p;
 }
 
-function &get_get($gets = null)
+function &get_get(?array $gets = null) : array
 {
   static $g = null;
 
@@ -94,7 +94,7 @@ function &get_get($gets = null)
   return $g;
 }
 
-function &get_cookie($cookies = null)
+function &get_cookie(?array $cookies = null) : array
 {
   static $c = null;
 
@@ -115,7 +115,7 @@ function &get_cookie($cookies = null)
  ファイル配列を得る。
 
 ------------------------------------------------------------------------------*/
-function &get_files($files = null)
+function &get_files(?array $files = null) : array
 {
   static $f = null;
 
@@ -135,7 +135,7 @@ function &get_files($files = null)
  セッション配列を得る。
 
 ------------------------------------------------------------------------------*/
-function &get_session($session = null)
+function &get_session(?array $session = null) : array
 {
   static $s = null;
 
@@ -155,7 +155,7 @@ function &get_session($session = null)
  BASE_URL,SITE_URLのアクセサ
 
 ------------------------------------------------------------------------------*/
-function get_url($set_url = null,$return_old_value = false)
+function get_url(?string $set_url = null,bool $return_old_value = false) : string
 {
   static $urls = array('get_base_url'     => BASE_URL,
                        'get_site_url'     => SITE_URL);
@@ -164,25 +164,23 @@ function get_url($set_url = null,$return_old_value = false)
   $func = $bt[1]['function'];
 
   $old_value = $urls[$func];
-  if(is_string($set_url) && !empty($set_url) && preg_match('|^https?://|',$set_url))
-    {
-      $urls[$func] = $set_url;
-    }
+  if (!empty($set_url) && preg_match('|^https?://|', $set_url))
+    $urls[$func] = $set_url;
 
-  return $return_old_value === true ? $old_value : $urls[$func];
+  return $return_old_value ? $old_value : $urls[$func];
 }
 
-function get_base_url($set_url = null,$return_old_value = false)
+function get_base_url(?string $set_url = null,bool $return_old_value = false) : string
 {
   return get_url($set_url,$return_old_value);
 }
 
-function get_site_url($set_url = null,$return_old_value = false)
+function get_site_url(?string $set_url = null,bool $return_old_value = false) : string
 {
   return get_url($set_url,$return_old_value);
 }
 
-function get_self_url()
+function get_self_url() : array|string|int|false|null
 {
   return parse_url(get_base_url() . $_SERVER['REQUEST_URI'],PHP_URL_PATH);
 }
@@ -193,7 +191,7 @@ function get_self_url()
   get Route URL 
 
 ******************************************************************************/
-function get_route_url($route = '',?array $params = null,$suffix = false)
+function get_route_url($route = '',?array $params = null,$suffix = false) : string
 {
   $rte = Route::GetInstance(ROUTE_BASE);
   if(empty($route))
@@ -206,7 +204,7 @@ function get_route_url($route = '',?array $params = null,$suffix = false)
   return sprintf('%s%s',$base_url,$rte->getPath($route,$params,$suffix));
 }
 
-function get_route_tag($route = '')
+function get_route_tag(string $route = '') : string
 {
   $rv = '';
   $rte = Route::GetInstance(ROUTE_BASE);
@@ -221,13 +219,13 @@ function get_route_tag($route = '')
   return $rv;
 }
 
-function get_route()
+function get_route() : string
 {
   $rte = Route::GetInstance(ROUTE_BASE);
   return $rte->current();
 }
 
-function get_request_path($request_uri = null)
+function get_request_path(?string $request_uri = null) : string
 {
   if(empty($request_uri))
     $request_uri = $_SERVER['REQUEST_URI'];
@@ -235,7 +233,7 @@ function get_request_path($request_uri = null)
   return parse_url($request_uri,PHP_URL_PATH);
 }
 
-function get_form_action_path($route = '',?array $params = null)
+function get_form_action_path(string $route = '',?array $params = null) : string
 {
   $rte = Route::GetInstance(ROUTE_BASE);
   if($rte->rewritable())
@@ -244,15 +242,14 @@ function get_form_action_path($route = '',?array $params = null)
   return get_request_path();
 }
 
-function get_csrf_tag($data = null,$tokenname = 'csrf-tokens',$name = 'csrf-token')
+function get_csrf_tag(mixed $data = null,string $tokenname = 'csrf-tokens',string $name = 'csrf-token') : string
 {
   return sprintf('<input type="hidden" name="%s" value="%s" />',
                  $name,
                  CsrfTokens::GetInstance($tokenname)->generate($data));
 }
 
-function get_csrf_token($data = null,$tokenname = 'csrf-tokens')
+function get_csrf_token(mixed $data = null,string $tokenname = 'csrf-tokens') : string
 {
   return CsrfTokens::GetInstance($tokenname)->generate($data);
 }
-

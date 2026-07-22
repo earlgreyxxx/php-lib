@@ -17,33 +17,33 @@ class SQLArray
 {
   private static $delimiter = ';';
 
-  public static function is($ar_str)
-    {
-      $matches = array();
-      $pattern = '/^'.preg_quote(self::$delimiter).'(.+)'.preg_quote(self::$delimiter).'$/';
-      return (0 < strlen($ar_str)) && preg_match($pattern,$ar_str,$matches) ? $matches[1] : false;
-    }
+  public static function is(string $ar_str) : bool
+  {
+    $matches = array();
+    $pattern = '/^' . preg_quote(self::$delimiter) . '(.+)' . preg_quote(self::$delimiter) . '$/';
+    return (0 < strlen($ar_str)) && preg_match($pattern, $ar_str, $matches) ? $matches[1] : false;
+  }
 
-  public static function serialize(array $ar)
-    {
-      //入力された配列からデリミタ文字をエスケープする
-      $ar = str_replace(self::$delimiter,'&#'.ord(self::$delimiter),$ar);
+  public static function serialize(array $ar): string
+  {
+    //入力された配列からデリミタ文字をエスケープする
+    $ar = str_replace(self::$delimiter, '&#' . ord(self::$delimiter), $ar);
 
-      return self::$delimiter . implode(self::$delimiter,$ar) . self::$delimiter;
-    }
+    return self::$delimiter . implode(self::$delimiter, $ar) . self::$delimiter;
+  }
 
   //[TODO] 戻された配列からデリミタ文字をアンエスケープする
-  public static function unserialize($ar_str)
-    {
-      if(empty($ar_str))
-        return array();
+  public static function unserialize(string $ar_str): array
+  {
+    if (empty($ar_str))
+      return [];
 
-      if(($str = self::is($ar_str)) !== false)
-        $ar = explode(self::$delimiter,$str);
-      else
-        $ar = array($ar_str);
+    if (($str = self::is($ar_str)) !== false)
+      $ar = explode(self::$delimiter, $str);
+    else
+      $ar = array($ar_str);
 
-      return str_replace('&#'.ord(self::$delimiter),self::$delimiter,$ar);
-    }
+    return str_replace('&#' . ord(self::$delimiter), self::$delimiter, $ar);
+  }
 }
 

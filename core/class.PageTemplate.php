@@ -7,24 +7,24 @@
 
 class PageTemplate extends TemplateBase
 {
-  private function getMaxPage()
+  private function getMaxPage() : int
   {
     return intval($this['length'] > 0 ? ceil($this['length'] / $this['max_per_page']) : 1);
   }
 
-  private function getPagination()
+  private function getPagination() : string
   {
-    $pagingUrl = $this->get('pagingUrl');
-    $current_page = $this->get('page');
-    $max_per_page = $this->get('max_per_page');
-    $length = $this->get('length');
+    $pagingUrl = $this['pagingUrl'];
+    $current_page = intval($this['page']);
+    $max_per_page = intval($this['max_per_page']);
+    $length = intval($this['length']);
     if($length <= 0)
-      return;
+      return '';
 
     $delm = false === strpos($pagingUrl,'?') ? '?' : '&';
     $max_page = $length > 0 ? ceil($length / $max_per_page) : 1;
 
-    $rv = array();
+    $rv = [];
 
     $delta = PAGE_NAVI_DELTA;
     $start = $current_page - $delta;
@@ -66,20 +66,20 @@ class PageTemplate extends TemplateBase
   }
 
   // paging data given
-  public function setPagingInfo($item_length,$max_per_page = 10,$current_page = 1,$url = '')
-    {
-      $this['page'] = $current_page;
-      $this['max_per_page'] = $max_per_page;
-      $this['length'] = $item_length;
-      $this['pagingUrl'] = $url;
-    }
+  public function setPagingInfo(int $item_length,int $max_per_page = 10,int $current_page = 1,string $url = '') : void
+  {
+    $this['page'] = $current_page;
+    $this['max_per_page'] = $max_per_page;
+    $this['length'] = $item_length;
+    $this['pagingUrl'] = $url;
+  }
 
-  public function maxPage($before = '',$after = '')
+  public function maxPage(string $before = '',string $after = '') : void
   {
     echo $before,$this->getMaxPage(),$after;
   }
 
-  public function pagination(string $before = '<ul>',string $after = '</ul>',bool $force = true)
+  public function pagination(string $before = '<ul>',string $after = '</ul>',bool $force = true) : void
   {
     if(!$force && $this->getMaxPage() <= 1)
       return;
@@ -89,7 +89,7 @@ class PageTemplate extends TemplateBase
     echo "\n  ",$after;
   }
 
-  protected function buildAttributes(array $attrs)
+  protected function buildAttributes(array $attrs) : string
   {
     $attrib = '';
     if(!empty($attrs))
@@ -97,41 +97,37 @@ class PageTemplate extends TemplateBase
       $attribs = array('');
       foreach($attrs as $n => $v)
       {
-        if(is_int($n))
+        if(is_numeric($n))
           $attribs[] = $v;
         else
           $attribs[] = sprintf('%s="%s"',$n,htmlspecialchars($v,ENT_QUOTES));
       }
       $attrib = implode(' ',$attribs);
     }
-    else if(is_string($attrs) && !empty($attrs))
-    {
-      $attrib = ' ' . trim($attrs);
-    }
 
     return $attrib;
   }
 
-  protected function getStartTag($tagname,array $attrs = array())
+  protected function getStartTag(string $tagname,array $attrs = []) : string
   {
     $attrib = $this->buildAttributes($attrs);
     return sprintf('<%s%s>',$tagname,$attrib);
   }
-  protected function getEndTag($tagname)
+  protected function getEndTag(string $tagname) : string
   {
     return sprintf('</%s>',$tagname);
   }
 
-  protected function getTag($tagname,$content,array $attrs = array())
+  protected function getTag(string $tagname,string $content,array $attrs = []) : string
   {
     return $this->getStartTag($tagname,$attrs).$content.$this->getEndTag($tagname);
   }
 
-  protected function tag($tagname,$content,array $attrs = array())
+  protected function tag(string $tagname,string $content,array $attrs = []) : void
   {
     echo $this->getTag($tagname,$content,$attrs),PHP_EOL;
   }
-  protected function tagVal($tagname,$propname,array $attrs = array())
+  protected function tagVal(string $tagname,string $propname,array $attrs = []) : void
   {
     $this->tag($tagname,$this[$propname],$attrs);
   }

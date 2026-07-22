@@ -10,9 +10,9 @@ abstract class Controller
 {
   // Statics
   // ---------------------------------------------------------------------------
-  public static function GetInstance(array $define = array())
+  public static function GetInstance(array $define = []) : static
   {
-    static $instances = array();
+    static $instances = [];
     $classname = get_called_class();
 
     if(!isset($instances[$classname]))
@@ -25,19 +25,19 @@ abstract class Controller
   // ---------------------------------------------------------------------------
 
   // create view object
-  abstract protected function createView();
+  abstract protected function createView() : ?ViewBase;
 
   // view object gettter
-  abstract protected function getView();
+  abstract protected function getView() : ViewBase;
 
   // create model object
-  abstract protected function createModel();
+  abstract protected function createModel() : mixed;
 
   // model object getter
-  abstract protected function getModel();
+  abstract protected function getModel() : mixed;
 
   // initialize object
-  abstract protected function init();
+  abstract protected function init() : void;
 
   // constructor
   public function __construct(?array $params = null)

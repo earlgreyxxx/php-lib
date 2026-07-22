@@ -7,8 +7,8 @@
 *******************************************************************************/
 interface DataAccess
 {
-  public function getData();
-  public function setData(array $data);
-  public function clearData();
-  public function refreshData();
+  public function getData() : ?array;
+  public function setData(array $data) : true;
+  public function clearData() : void;
+  public function refreshData() : void;
 }

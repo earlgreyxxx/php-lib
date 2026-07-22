@@ -1,5 +1,4 @@
-<?php
-/*******************************************************************************
+<?php /**************************************************************************
 
   This class is derivered from PDO(PHP INTERNAL CORE CLASS).
    Aattach database handle(PDO Instance) to Store Object,
@@ -17,9 +16,9 @@ class PDOMysql extends PDOExtension
   /*------------------------------------------------------------------------------
     Statics
   ------------------------------------------------------------------------------*/
-  protected static $CONDITION = 'having ';
-  protected static $SELECT_LOCK = 'for update';
-  protected static $DBM = 'mysql';
+  protected static string $CONDITION = 'HAVING ';
+  protected static string $SELECT_LOCK = 'FOR UPDATE';
+  protected static string $DBM = 'mysql';
 
   /*------------------------------------------------------------------------------
     Instances
@@ -29,7 +28,7 @@ class PDOMysql extends PDOExtension
   /*------------------------------------------------------------------------------
     Constructor
   ------------------------------------------------------------------------------*/
-  public function __construct($dsn,$username='',$password='',$options = array())
+  public function __construct(string $dsn,string $username='',string $password='',array $options = [])
   {
     $this->dsn = $dsn;
 
@@ -42,27 +41,31 @@ class PDOMysql extends PDOExtension
     parent::__construct($dsn,$username,$password,$options);
   }
 
-  protected function get_dbname()
+  protected function get_dbname() : string
   {
-    if(!preg_match('/dbname=(.+?);/i',$this->dsn,$m))
-      throw new Exception(_('dbname is not specified'));
+    static $dbname = null;
+    if($dbname === null)
+    {
+      if (!preg_match('/dbname=(.+?);/i', $this->dsn, $m))
+        throw new Exception(_('dbname is not specified'));
 
-    return $m[1];
+      $dbname = $m[1];
+    }
+
+    return $dbname;
   }
 
   /*------------------------------------------------------------------------------
     Implements
   ------------------------------------------------------------------------------*/
-  public function exists($table)
+  public function exists(string $table) : bool
   {
     $rv = false;
     $sql = sprintf('SHOW TABLES LIKE %s',$this->quote($table));
 
     if(false !== ($sth = $this->query($sql)))
     {
-      if(false !== $sth->fetchColumn())
-        $rv = true;
-
+      $rv = false !== ($count = $sth->fetchColumn()) && $count > 0;
       $sth->closeCursor();
       $sth = null;
     }
@@ -70,15 +73,15 @@ class PDOMysql extends PDOExtension
     return $rv;
   }
 
-  public function getTables($get_option = 0)
+  public function getTables(mixed $get_option = 0) : array
   {
     $rv = false;
-    $items = array();
     $dbname= $this->get_dbname();
 
-    if($sth = $this->query(sprintf('SELECT * from information_schema.tables WHERE TABLE_SCHEMA = %s', $this->quote($dbname))))
+    $query = sprintf('SELECT * FROM information_schema.tables WHERE TABLE_SCHEMA = %s', $this->quote($dbname));
+    if($sth = $this->query($query))
     {
-      $rv = array();
+      $rv = [];
       if($get_option)
       {
         $keys = array();
@@ -97,6 +100,7 @@ class PDOMysql extends PDOExtension
         if($get_option & PDOExtension::GET_TYPE)
           $keys[] = 'TABLE_TYPE';
 
+        $fn = null;
         $keys_len = count($keys);
         if($keys_len == 1)
         {
@@ -131,18 +135,20 @@ class PDOMysql extends PDOExtension
     return $rv;
   }
 
-  public function getColumns($table)
+  public function getColumns(string $table) : array
   {
-    $rv = false;
+    $rv = [];
     $dbname = $this->get_dbname();
-    $sql = sprintf('SELECT COLUMN_NAME from information_schema.columns WHERE TABLE_SCHEMA = %s AND TABLE_NAME = %s ORDER BY ORDINAL_POSITION',
+    $sql = sprintf(
+      'SELECT COLUMN_NAME from information_schema.columns WHERE TABLE_SCHEMA = %s AND TABLE_NAME = %s ORDER BY ORDINAL_POSITION',
       $this->quote($dbname),
-      $this->quote($table));
+      $this->quote($table)
+    );
 
     if(false != ($sth = $this->query($sql)))
     {
-      $columns = array();
-      while(false != ($row = $sth->fetch(PDO::FETCH_ASSOC)))
+      $columns = [];
+      while(false !== ($row = $sth->fetch(PDO::FETCH_ASSOC)))
         $columns[] = $row['COLUMN_NAME'];
 
       if(count($columns) > 0)
@@ -152,11 +158,11 @@ class PDOMysql extends PDOExtension
     return $rv;
   }
 
-  public function getInfo($table)
+  public function getInfo(string $table) : array
   {
-    $rv = array('table' => array(),'column' => array());
+    $rv = ['table' => [],'column' => []];
     $sql = sprintf('SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = N%s',$this->quote($table));
-    if(false != ($sth = $this->query($sql)))
+    if(false !== ($sth = $this->query($sql)))
     {
       while($row = $sth->fetch(PDO::FETCH_ASSOC))
         $rv['column'][$row['COLUMN_NAME']] = $row;
@@ -175,15 +181,17 @@ class PDOMysql extends PDOExtension
     return $rv;
   }
 
-  public function getLastUpdate($table,$fmt = 'Y/m/d')
+  public function getLastUpdate(string $table,string $fmt = 'Y/m/d') : string
   {
-    $rv = false;
-    if(!empty($table) && preg_match('/dbname=(.+?);/i',$this->dsn,$m))
+    $rv = '';
+    $dbname = $this->get_dbname();
+    if(!empty($table))
     {
-      $dbname = $m[1];
-      $sql = sprintf('SELECT CREATE_TIME, UPDATE_TIME from information_schema.tables WHERE TABLE_SCHEMA = %s and TABLE_NAME = %s',
+      $sql = sprintf(
+        'SELECT CREATE_TIME, UPDATE_TIME from information_schema.tables WHERE TABLE_SCHEMA = %s and TABLE_NAME = %s',
         $this->quote($dbname),
-        $this->quote($table));
+        $this->quote($table)
+      );
 
       if(false !== ($sth = $this->query($sql)))
       {
@@ -196,48 +204,57 @@ class PDOMysql extends PDOExtension
         }
 
         $sth->closeCursor();
+        $sth = null;
       }
     }
     return $rv;
   }
 
-  public function begin()
+  public function begin() : bool
   {
     return $this->beginTransaction();
   }
 
   //テーブル生成
-  public function createTable($table,$columns)
+  public function createTable(string $table,array $columns) : int|false
   {
-    $values = array( 'AUTOINCREMENT' => 'AUTO_INCREMENT' );
+    $values = [ 'AUTOINCREMENT' => 'AUTO_INCREMENT' ];
 
-    $sql = sprintf('CREATE TABLE %s(%s) ENGINE=%s DEFAULT CHARSET=utf8',
+    $sql = sprintf(
+      'CREATE TABLE %s(%s) ENGINE=%s DEFAULT CHARSET=utf8',
       $this->quoteTable($table),
       $this->formatString($columns,$values,','),
-      MYSQL_STORAGE_ENGINE);
+      MYSQL_STORAGE_ENGINE
+    );
 
     return $this->exec($sql);
   }
 
   //インデックス作成
-  public function createIndex($table,$index,$columns,$unique = false,$grant = 'alter')
+  public function createIndex(string $table,string $index,array $columns,bool $unique = false,string $grant = 'alter') : int|false
   {
-    $sql = array('index' => sprintf('CREATE %1$s %2$s ON %3$s(%4$s)',
-      $unique ? 'UNIQUE INDEX' : 'INDEX',
-      $index,
-      $this->quoteTable($table),
-      implode(',',$columns)),
-    'alter' => sprintf('ALTER TABLE %3$s ADD %1$s %2$s(%4$s)',
-    $unique ? 'UNIQUE' : 'INDEX',
-    $index,
-    $this->quoteTable($table),
-    implode(',',$columns)));
+    $sql = [
+      'index' => sprintf(
+        'CREATE %1$s %2$s ON %3$s(%4$s)',
+        $unique ? 'UNIQUE INDEX' : 'INDEX',
+        $index,
+        $this->quoteTable($table),
+        implode(',',$columns)
+      ),
+      'alter' => sprintf(
+        'ALTER TABLE %3$s ADD %1$s %2$s(%4$s)',
+        $unique ? 'UNIQUE' : 'INDEX',
+        $index,
+        $this->quoteTable($table),
+        implode(',',$columns)
+      )
+    ];
 
     return $this->exec($sql[$grant]);
   }
 
   // 外部キー制約
-  public function setForeignKeyConstraint(string $table,array $params)
+  public function setForeignKeyConstraint(string $table,array $params) : int|false
   {
     $constraint = (object)$params;
     if(empty($constraint->name))
@@ -261,17 +278,17 @@ class PDOMysql extends PDOExtension
     return $this->exec($sql);
   }
 
-  public function get_selectlock()
+  public function get_selectlock() : string
   {
     return self::$SELECT_LOCK;
   }
 
-  public function groupconcat($column)
+  public function groupconcat(string $column) : string
   {
     return sprintf('CONCAT(";",GROUP_CONCAT(%s separator ";"),";")',$this->quoteColumns($column));
   }
 
-  public function concat($columns,$as = '')
+  public function concat(array $columns,string $as = '') : string
   {
     $rv = count($columns) > 1 ? sprintf('CONCAT(%s)',implode(',',$this->quoteColumns($columns))) : $columns[0];
     if(!empty($as))
@@ -280,11 +297,11 @@ class PDOMysql extends PDOExtension
     return $rv;
   }
 
-  public function like($column,$str,$multimode = 'AND',$unicode = false)
+  public function like(string $column,string $str,string $multimode = 'AND',bool $unicode = false) : string
   {
     $words = preg_split('/\s+/u',$str);
     $rv = '';
-    $rva = array();
+    $rva = [];
 
     $fmt = $unicode === true ? 'CONVERT(%s using utf8) COLLATE utf8_unicode_ci LIKE %s' : '%s LIKE %s';
 
@@ -294,7 +311,8 @@ class PDOMysql extends PDOExtension
       {
         $rva[] = sprintf($fmt,
           $this->quoteColumns($column),
-          $this->quote('%'.$this->escape($word).'%'));
+          $this->quote('%'.$this->escape($word).'%')
+        );
       }
     }
 
@@ -304,12 +322,12 @@ class PDOMysql extends PDOExtension
     return $rv;
   }
 
-  protected function quoteX($x)
+  protected function quoteX(string $x) : string
   {
     return sprintf('`%s`',$x);
   }
 
-  public function procedure($name,$arguments,$arguments_are_quoted = false)
+  public function procedure(string $name,array $arguments,bool $arguments_are_quoted = false)
   {
     if(!$arguments_are_quoted)
     {
@@ -323,8 +341,8 @@ class PDOMysql extends PDOExtension
   }
 
   // override
-  public function quoteTable(string $tablename,bool $parseDot = false)
+  public function quoteTable(string $tablename,bool $parseDot = false) : string
   {
-    return parent::quoteTable($tablename,$parseDot);
+    return $this->quoteTable($tablename,$parseDot);
   }
 }

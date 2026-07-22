@@ -1,23 +1,19 @@
-<?php
-/*******************************************************************************
+<?php /*************************************************************************
 
   日付に関する関数定義
 
   All Written by K.,Nakagawa.
 
 *******************************************************************************/
-/*------------------------------------------------------------------------------
-
-  日付に関する関数・定義
-
-------------------------------------------------------------------------------*/
 
 //DATE型の未定義値の定義
+// --------------------------------------------------
 define('DATE_NULL','0000-01-01');
 define('DATE_BOUND','9999-12-31');
 
-//日付型の未定義値を空文字に変換する。
-function date_to_empty(&$date)
+// 日付型の未定義値を空文字に変換する。
+// --------------------------------------------------
+function date_to_empty(string &$date) : bool
 {
   $rv = false;
 
@@ -30,25 +26,26 @@ function date_to_empty(&$date)
   return $rv;
 }
 
-//現在日時を表す文字列を返す、date関数のショートカット
-function Now($format = 'Y-m-d H:i:s')
+// 現在日時を表す文字列を返す、date関数のショートカット
+// --------------------------------------------------
+function Now(string $format = 'Y-m-d H:i:s') : string
 {
   return date($format);
 }
 
 // 年度の範囲rangeを取得
 // --------------------------------------------------
-function get_business_year_range($byear = 0,$fmt = 'Y-m-d')
+function get_business_year_range(int $byear = 0,?string $fmt = 'Y-m-d') : array
 {
-  return array(
+  return [
     's' => business_year_start_date($byear,$fmt),
     'e' => business_year_end_date($byear,$fmt)
-  );
+  ];
 }
 
 // 指定年度の開始日付文字列を返す
 // --------------------------------------------------
-function business_year_start_date($byear = 0,$fmt = 'Y-m-d')
+function business_year_start_date(int $byear = 0,?string $fmt = 'Y-m-d') : int|string|false
 {
   if($byear == 0)
     $byear = get_business_year();
@@ -59,27 +56,27 @@ function business_year_start_date($byear = 0,$fmt = 'Y-m-d')
 
 // 指定年度の終了日付文字列を返す
 // --------------------------------------------------
-function business_year_end_date($byear = 0,$fmt = 'Y-m-d')
+function business_year_end_date(int $byear = 0,?string $fmt = 'Y-m-d') : int|string|false
 {
   if($byear == 0)
     $byear = get_business_year();
 
   $time = strtotime('+1Year-1Day',mktime(0,0,0,business_year_start_month(),1,$byear));
-  return is_null($fmt) ? $time : date($fmt,$time);
+  return empty($fmt) ? $time : date($fmt,$time);
 }
 
 // 年度始まりの月の取得／設定
 // --------------------------------------------------
-function business_year_start_month($set_month = null)
+function business_year_start_month(?int $set_month = null) : int
 {
   static $start_month = 4;
-  if(!is_null($set_month) && is_int($set_month) && $set_month >= 1 && $set_month <= 12)
+  if(!is_null($set_month) && $set_month >= 1 && $set_month <= 12)
     $start_month = $set_month;
 
   return $start_month;
 }
 
-function business_year_end_month()
+function business_year_end_month() : int
 {
   $start = business_year_start_month();
   $end   = $start - 1;
@@ -88,7 +85,7 @@ function business_year_end_month()
 
 // 指定されたUNIX時間における年度を返す
 // --------------------------------------------------
-function get_business_year($time = null,$start_month = 4)
+function get_business_year(int|string|null $time = null,int $start_month = 4) : int
 {
   if(empty($time))
     $time = time();
@@ -108,7 +105,7 @@ function get_business_year($time = null,$start_month = 4)
 
 // 年度月日を現実月日に変換する
 // --------------------------------------------------
-function business_date_to_real_date($by,$bm,$bd = 1)
+function business_date_to_real_date(int $by,int $bm,int $bd = 1) : array
 {
   $y = $by;
   $start_month = business_year_start_month();
@@ -120,7 +117,7 @@ function business_date_to_real_date($by,$bm,$bd = 1)
 
 // 週の一覧を取得
 // --------------------------------------------------
-function getWeeks($start = 0)
+function getWeeks(int $start = 0) : array
 {
   static $week_jp = ['日','月','火','水','木','金','土'];
 
@@ -139,7 +136,7 @@ function getWeeks($start = 0)
 
 // 指定した年・月のカレンダー構造を作成する
 // ---------------------------------------------------
-function calendar($y,$m,$option = 0)
+function calendar(int $y,int $m,mixed $option = 0) : array
 {
   if($y < 1000 || $y > 2100)
     throw new RuntimeException(_('$year was out of range'));
@@ -153,7 +150,7 @@ function calendar($y,$m,$option = 0)
 
   $begin = 0;
   $callback = function($y,$m,$d) { return sprintf('%02d',$d); };
-  if(is_array($begin))
+  if(is_array($option))
   {
     $begin = $option['begin'];
     $callback = $option['callback'];
@@ -189,89 +186,90 @@ function calendar($y,$m,$option = 0)
 /*---------------------------------------------------------------------
   西暦日付から和暦情報(array(年号,年,月,日))を返す。
 ----------------------------------------------------------------------*/
-function get_wareki_year($y,$m,$d)
+function get_wareki_year(int $y,int $m,int $d,string $unit = '年') : string
 {
-  $rv = get_wareki($y,$m,$d,array('showa'=>'昭和','heisei'=>'平成','taisho'=>'大正','meiji'=>'明治'));
-
-  return implode('',array_splice($rv,0,2)).'年';
+  return implode(
+    '',
+    array_slice(
+      get_wareki($y,$m,$d)
+      ,0
+      ,2
+    )
+  ).$unit;
 }
 
-function get_wareki($y = 1970,
-                    $m = 1 ,
-                    $d = 1,
-                    $nengo = array())
+function get_wareki(int $y = 1970, int $m = 1, int $d = 1, array $nengo = ['reiwa' => '令和','showa'=>'昭和','heisei'=>'平成','taisho'=>'大正','meiji'=>'明治']) : array
 {
-  static $wareki = array('meiji' => 'meiji',
-                         'taisho' => 'taisho',
-                         'showa' => 'showa',
-                         'heisei' => 'heisei',
-                         'seireki' => 'seireki');
+  static $wareki = [
+    'meiji' => 'meiji',
+    'taisho' => 'taisho',
+    'showa' => 'showa',
+    'heisei' => 'heisei',
+    'reiwa' => 'reiwa',
+    'seireki' => 'seireki'
+  ];
 
   if(is_array($nengo) && !empty($nengo))
     $nengo = array_merge($wareki,$nengo);
 
   $date = sprintf('%04d%02d%02d',$y,$m,$d);
-  $rv = array('seireki',$y,$m,$d);
-  
-  if($date >= 19890108)
-    {
-      $rv = array($nengo['heisei'],$y - 1988,$m,$d);
-    }
-  else if($date >= 19261225)
-    {
-      $rv = array($nengo['showa'],$y - 1925,$m,$d);
-    }
-  else if($date >= 19120730)
-    {
-      $rv = array($nengo['taisho'],$y - 1911,$m,$d);
-    }
-  else if($date >= 18680125)
-    {
-      $rv = array($nengo['meiji'],$y - 1867,$m,$d);
-    }
 
-  return $rv;
+  if( $date >= 20190501)
+    return [$nengo['reiwa'], $y - 2018, $m, $d];
+  else if ($date >= 19890108)
+    return [$nengo['heisei'], $y - 1988, $m, $d];
+  else if ($date >= 19261225)
+    return [$nengo['showa'], $y - 1925, $m, $d];
+  else if ($date >= 19120730)
+    return [$nengo['taisho'], $y - 1911, $m, $d];
+  else if ($date >= 18680125)
+    return [$nengo['meiji'], $y - 1867, $m, $d];
+  else
+    return [$nengo['seireki'], $y, $m, $d];
 }
 
-function get_wareki_range($unit,$min = 0)
+function get_wareki_range(string $unit,int $min = 0)
 {
-  static $wareki = array('heisei' => 0,
-                         'showa' => 64,
-                         'taisho' => 15,
-                         'meiji' => 45);
+  static $wareki = [
+    'reiwa'  => 0,
+    'heisei' => 31,
+    'showa'  => 64,
+    'taisho' => 15,
+    'meiji'  => 45
+  ];
 
   if(empty($unit))
     $unit = 'seireki';
 
-  if(!$wareki['heisei'])
-    $wareki['heisei'] = intval(date('Y')) - 1988;
+  if(!$wareki['reiwa'])
+    $wareki['reiwa'] = intval(date('Y')) - 2018;
 
   $thisYear = intval(date('Y'));
   $from = 1;
-  if(array_key_exists($unit,$wareki))
-    {
-      $to = $wareki[$unit];
-    }
+  if (array_key_exists($unit, $wareki))
+  {
+    $to = $wareki[$unit];
+  }
   else
-    {
-      $from = $thisYear - 80;
-      $to = $thisYear;
-      if($min > 1900 && $from > $min)
-        $from = $min;
-    }
+  {
+    $from = $thisYear - 80;
+    $to = $thisYear;
+    if ($min > 1900 && $from > $min)
+      $from = $min;
+  }
 
-  return array($from,$to);
+  return [$from, $to];
 }
 
 /*---------------------------------------------------------------------
   満年齢を返す
 ----------------------------------------------------------------------*/
-function get_full_age($birth)
+function get_full_age(int $birth) : int
 {
   return intval((intval(date('Ymd')) - intval(date('Ymd',$birth)))/10000);
 }
 
-function full_age($birth,$unit = '')
+function full_age(int $birth,string $unit = '') : void
 {
   echo get_full_age($birth),$unit;
 }

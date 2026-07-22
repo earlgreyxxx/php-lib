@@ -57,7 +57,7 @@ try {
 /*------------------------------------------------------------------------------
   ディレクトリ以下の*.phpに対してrequire_once関数を実行します。
 ------------------------------------------------------------------------------*/
-function include_files($dirName)
+function include_files(string $dirName) : bool
 {
   if(!file_exists($dirName))
     return false;
@@ -75,7 +75,7 @@ function include_files($dirName)
 /*------------------------------------------------------------------------------
   autoload 登録
 ------------------------------------------------------------------------------*/
-function init_autoload(array $rootdirs)
+function init_autoload(array $rootdirs) : void
 {
   foreach($rootdirs as $rootdir)
   {

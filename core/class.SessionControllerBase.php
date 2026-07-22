@@ -21,9 +21,9 @@ if(!defined('EXPIRE_AVAILABLE'))
 
 class SessionControllerBase extends WebControllerBase
 {
-  protected static $userinfo = null;
+  protected static mixed $userinfo = null;
 
-  protected function init()
+  protected function init() : void
   {
     global $SESSION_PARAMS;
     $session = Session::GetInstance(SESSION_APPNAME,$SESSION_PARAMS);
@@ -63,18 +63,18 @@ class SessionControllerBase extends WebControllerBase
     parent::init();
   }
 
-  private $expire_time_sign = 0;
-  protected function setExpireSignTime($second)
+  private int $expire_time_sign = 0;
+  protected function setExpireSignTime(int|string $second) : void
   {
-    if(!is_int($second))
+    if(!is_numeric($second))
       throw new RuntimeException(_('invalid argument type'));
 
     if($second < 0)
       throw new RuntimeException(_('invalid value range'));
 
-    $this->expire_time_sign = $second;
+    $this->expire_time_sign = intval($second);
   }
-  public function getExpireSignTime()
+  public function getExpireSignTime() : int
   {
     return $this->expire_time_sign;
   }

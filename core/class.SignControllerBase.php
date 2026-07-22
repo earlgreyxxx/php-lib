@@ -15,10 +15,10 @@ if(!defined('FAILED_SIGN'))
 
 abstract class SignControllerBase extends WebControllerBase
 {
-  abstract protected function postSignout();
-  abstract public function verify();
+  abstract protected function postSignout() : bool;
+  abstract public function verify() : bool;
 
-  protected function init()
+  protected function init() : void
   {
     global $SESSION_PARAMS;
     Session::GetInstance(SESSION_APPNAME,$SESSION_PARAMS);
@@ -29,7 +29,7 @@ abstract class SignControllerBase extends WebControllerBase
     $view->setFooter(false);
   }
 
-  public function signin()
+  public function signin() : bool
   {
     $cookie = Cookie::GetInstance('signin');
 
@@ -41,7 +41,7 @@ abstract class SignControllerBase extends WebControllerBase
     return true;
   }
 
-  public function signout()
+  public function signout() : bool
   {
     do_action('signout');
 
@@ -49,5 +49,4 @@ abstract class SignControllerBase extends WebControllerBase
 
     return $this->postSignout();
   }
-
 }

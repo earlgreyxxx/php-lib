@@ -1,5 +1,4 @@
-<?php
-/*******************************************************************************
+<?php /**************************************************************************
 
   Manage CsrfTokens class
 
@@ -18,7 +17,7 @@
 class CsrfTokens
 {
   // static members
-  public static function GetInstance($name = 'csrf-tokens',$options = array())
+  public static function GetInstance(string $name = 'csrf-tokens',array $options = array()) : static
   {
     static $pool = array();
 
@@ -29,10 +28,10 @@ class CsrfTokens
   }
 
   // Instance memebers
-  protected $name;
-  protected $expire = 10800;
+  protected string $name;
+  protected int $expire = 10800;
 
-  public function __construct($name,?array $options = null)
+  public function __construct(string $name,?array $options = null)
   {
     if(empty($name) || !is_string($name))
       $name = 'csrf-tokens';
@@ -54,7 +53,7 @@ class CsrfTokens
     $this->cleanup();
   }
 
-  public function setExpire($expire)
+  public function setExpire(int $expire) : int
   {
     $rv = $this->expire;
     $this->expire = $expire;
@@ -62,7 +61,7 @@ class CsrfTokens
     return $rv;
   }
 
-  public function generate($data = null)
+  public function generate(mixed $data = null) : string
   {
     $session = &get_session();
     $token = sha1(random_bytes(32));
@@ -74,7 +73,7 @@ class CsrfTokens
     return $token;
   }
 
-  public function publish($data = null)
+  public function publish(mixed $data = null) : string
   {
     $token = $this->generate($data);
 
@@ -87,7 +86,7 @@ class CsrfTokens
   }
 
   // if $delete is true and $token is valid, call delete method.
-  public function verify($token = null,$match = null,$delete = true)
+  public function verify(?string $token = null,mixed $match = null,bool $delete = true) : bool
   {
     $session = get_session();
     if(empty($token))
@@ -106,7 +105,7 @@ class CsrfTokens
     return $rv;
   }
 
-  public function delete($token)
+  public function delete(string $token) : void
   {
     $session = &get_session();
     if(array_key_exists($token,$session[$this->name]))
@@ -119,12 +118,12 @@ class CsrfTokens
     }
   }
 
-  public function fetch()
+  public function fetch() : string
   {
     return Cookie::GetInstance($this->name)->get('csrf-token');
   } 
 
-  public function cleanup()
+  public function cleanup() : void
   {
     $session = &get_session();
     if(!array_key_exists($this->name,$session))

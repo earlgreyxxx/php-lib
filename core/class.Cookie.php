@@ -1,5 +1,4 @@
-<?php
-/*******************************************************************************
+<?php /*************************************************************************
 
   クッキー・クラス
 
@@ -14,71 +13,82 @@ class Cookie extends KeyValueCollection
   //クッキー容量制限値
   static private $COOKIE_LIMIT = 4096;
 
-  public static function GetInstance($cookiename = null,$encrypted = false)
+//  public static function GetInstance(string $param1,array $options = []) : static
+  public static function GetInstance(string|null $cookiename = null,array|bool $encrypted = false) : static
+  {
+    $rv = false;
+    $cookie = get_cookie();
+    if (empty($cookiename))
     {
-      $rv = false;
-      $cookie = get_cookie();
-      if(empty($cookiename))
-        {
-          $rv = array();
-          foreach(array_keys($cookie) as $cookiename_)
-            $rv[] = new self($cookiename_,array('data' => $cookie[$cookiename_],
-                                                'encrypted' => $encrypted));
-        }
-      else if(array_key_exists($cookiename,$cookie))
-        {
-          $rv = new self($cookiename,array('data' => $cookie[$cookiename],
-                                           'encrypted' => $encrypted));
-        }
-      else
-        {
-          $rv = new self($cookiename,array('encrypted' => $encrypted));
-        }
-
-      return $rv;
-    }
-
-  public static function CreateInstance($cookiename,$params = array())
-    {
-      $rv = false;
-      $cookie = get_cookie();
-      if(array_key_exists($cookiename,$cookie))
-        $params['data'] = $cookie[$cookiename];
-
-      return new self($cookiename,$params);
-    }
-
-  // alias to setcookie function
-  public static function Raw($name,$value = "",$expire = 0,$path = "",$domain = "",$secure = false,$httponly = false,$samesite = 'strict')
-    {
-      if(PHP_VERSION_ID < 70300)
-        return setcookie($name,$value,$expire,$path,$domain,$secure,$httponly);
-      else
-        return setcookie(
-          $name,
-          $value,
+      $rv = [];
+      foreach (array_keys($cookie) as $cookiename_)
+        $rv[] = new self(
+          $cookiename_,
           [
-            'expires' => $expire,
-            'path' => $path,
-            'domain' => $domain,
-            'secure' => $secure,
-            'httponly' => $httponly,
-            'samesite' => $samesite
+            'data' => $cookie[$cookiename_],
+            'encrypted' => $encrypted
           ]
         );
     }
+    else if (array_key_exists($cookiename, $cookie))
+    {
+      $rv = new self(
+        $cookiename,
+        [
+          'data' => $cookie[$cookiename],
+          'encrypted' => $encrypted
+        ]
+      );
+    }
+    else
+    {
+      $rv = new self($cookiename, ['encrypted' => $encrypted]);
+    }
+
+    return $rv;
+  }
+
+  public static function CreateInstance(string $cookiename,array $params = []) : static
+  {
+    $rv = false;
+    $cookie = get_cookie();
+    if (array_key_exists($cookiename, $cookie))
+      $params['data'] = $cookie[$cookiename];
+
+    return new static($cookiename, $params);
+  }
+
+  // alias to setcookie function
+  public static function Raw(string $name,string $value = "",int|string $expire = 0,string $path = '',string $domain = '',bool $secure = false,bool $httponly = false,string $samesite = 'strict') : bool
+  {
+    if (PHP_VERSION_ID < 70300)
+      return setcookie($name, $value, $expire, $path, $domain, $secure, $httponly);
+    else
+      return setcookie(
+        $name,
+        $value,
+        [
+          'expires' => $expire,
+          'path' => $path,
+          'domain' => $domain,
+          'secure' => $secure,
+          'httponly' => $httponly,
+          'samesite' => $samesite
+        ]
+      );
+  }
 
   /*------------------------------------------------------------------------------
     Instance Members
   ------------------------------------------------------------------------------*/
-  protected $name = null;
-  protected $expire = 0;
-  protected $path = '/';
-  protected $domain = '';
-  protected $secure = false;
-  protected $http_only = false;
-  protected $encrypted = false;
-  protected $samesite = 'Strict';
+  protected ?string $name = null;
+  protected int $expire = 0;
+  protected string $path = '/';
+  protected string $domain = '';
+  protected bool $secure = false;
+  protected bool $http_only = false;
+  protected bool $encrypted = false;
+  protected string $samesite = 'Strict';
 
   /*------------------------------------------------------------------------------
    constructor ： $name => cookie name,
@@ -92,7 +102,7 @@ class Cookie extends KeyValueCollection
                                    samesite => 'Lax' or 'Strict' or 'None')
                          
   ------------------------------------------------------------------------------*/
-  public function __construct($name = '', $params = array())
+  public function __construct(string $name = '', array $params = [])
   {
     //クッキー名が指定されていない場合はファイルの更新時刻と現在時刻から勝手に決める
     if(empty($name))
@@ -115,8 +125,8 @@ class Cookie extends KeyValueCollection
         $this->set($data);
     }
 
-    $ar = array();
-    foreach(array('expire','domain','secure','http_only','samesite') as $arg)
+    $ar = [];
+    foreach(['expire','domain','secure','http_only','samesite'] as $arg)
     {
       if(isset($params[$arg]))
         $this->{$arg} = $params[$arg];
@@ -127,54 +137,55 @@ class Cookie extends KeyValueCollection
       $this->path = parse_url(BASE_URL,PHP_URL_PATH);
   }
 
-  public function attr($expire = 0,$path = '',$domain = '',$secure = false,$http_only = false,$samesite = 'Strict')
+  public function attr(int $expire = 0,string $path = '',string $domain = '',bool $secure = false,bool $http_only = false,string $samesite = 'Strict') : static
+  {
+    $this->expire    = $expire;
+    $this->path      = $path;
+    $this->domain    = $domain;
+    $this->secure    = $secure;
+    $this->http_only = $http_only;
+    $this->samesite  = $samesite;
+
+    return $this;
+  }
+
+  public function bake() : bool
+  {
+    $serialized = serialize($this->get_container());
+    if ($this->encrypted !== false)
+      $serialized = str_encrypt($serialized, $this->encrypted);
+
+    if (strlen($serialized) > self::$COOKIE_LIMIT)
+      return false;
+
+    return self::Raw(
+      $this->name,
+      $serialized,
+      $this->expire,
+      $this->path,
+      $this->domain,
+      $this->secure,
+      $this->http_only,
+      $this->samesite
+    );
+  }
+
+  public function __call(string $name, array $arguments) : mixed
+  {
+    $properties = get_object_vars($this);
+    if (isset($properties[$name]))
     {
-      $this->expire    = $expire;
-      $this->path      = $path;
-      $this->domain    = $domain;
-      $this->secure    = $secure;
-      $this->http_only = $http_only;
-      $this->samesite  = $samesite;
-
-      return $this;
-    }
-
-  public function bake()
-    {
-      $serialized = serialize($this->get_container());
-      if($this->encrypted !== false)
-        $serialized = str_encrypt($serialized,$this->encrypted);
-
-      if(strlen($serialized) > self::$COOKIE_LIMIT)
-        return false;
-
-      return self::Raw($this->name,
-                       $serialized,
-                       $this->expire,
-                       $this->path,
-                       $this->domain,
-                       $this->secure,
-                       $this->http_only,
-                       $this->samesite);
-    }
-
-  public function __call($name, $arguments)
-    {
-      $properties = get_object_vars($this);
-      if(isset($properties[$name]))
+      if (!empty($arguments[0]))
       {
-        if(!empty($arguments[0]))
-        {
-          $this->$name = $arguments[0];
-          return $arguments[0];
-        }
-        else
-        {
-          return $properties[$name];
-        }
+        $this->$name = $arguments[0];
+        return $arguments[0];
       }
-
-      throw new Exception(_('call unknown method.'));
+      else
+      {
+        return $properties[$name];
+      }
     }
-}
 
+    throw new Exception(_('call unknown method.'));
+  }
+}

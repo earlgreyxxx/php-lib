@@ -10,7 +10,7 @@
 /*------------------------------------------------------------------------------
 定義されていなければ定義する。
 ------------------------------------------------------------------------------*/
-function defineIf(string $name,$value)
+function defineIf(string $name,mixed $value) : bool
 {
 $rv = false;
 if(!defined($name))
@@ -22,7 +22,7 @@ return $rv;
 /*------------------------------------------------------------------------------
   Windowsの場合ファイル名をSJISで返す。
 ------------------------------------------------------------------------------*/
-function get_platform_filename($filename)
+function get_platform_filename(string $filename) : string
 {
   return DIRECTORY_SEPARATOR == '\\' ? mb_convert_encoding($filename,'SJIS-WIN','UTF-8') : $filename;
 }
@@ -30,7 +30,7 @@ function get_platform_filename($filename)
 /*------------------------------------------------------------------------------
   ファイル名のデコード
 ------------------------------------------------------------------------------*/
-function get_disposition_filename($filename)
+function get_disposition_filename(string $filename) : string
 {
   $filename = str_replace("?","？",$filename);
   $filename = str_replace("/","／",$filename);
@@ -48,7 +48,7 @@ function get_disposition_filename($filename)
 /*------------------------------------------------------------------------------
   ディレクトリの再帰削除
 ------------------------------------------------------------------------------*/
-function rrmdir($dir,$reg_pattern = '')
+function rrmdir(string $dir,string $reg_pattern = '') : bool
 {
   if(!is_dir($dir))
     return false;
@@ -75,12 +75,12 @@ function rrmdir($dir,$reg_pattern = '')
 /*------------------------------------------------------------------------------
   Windowsコマンドコンソール環境用にSJISでバッファリング
 ------------------------------------------------------------------------------*/
-function set_windows_console()
+function set_windows_console() : void
 {
-  function sjis_buffering($buffer)
-    {
-      return mb_convert_encoding($buffer,'SJIS-WIN','UTF-8');
-    }
+  function sjis_buffering(string $buffer)
+  {
+    return mb_convert_encoding($buffer, 'SJIS-WIN', 'UTF-8');
+  }
 
   ob_start('sjis_buffering');
 }
@@ -88,7 +88,7 @@ function set_windows_console()
 /*------------------------------------------------------------------------------
   出力バッファ・フラッシュ関数のラッパー
 ------------------------------------------------------------------------------*/
-function flush_windows_console()
+function flush_windows_console() : void
 {
   ob_end_flush();
 }
@@ -96,7 +96,7 @@ function flush_windows_console()
 /*------------------------------------------------------------------------------
   ZIPファイル判別
 ------------------------------------------------------------------------------*/
-function is_zip($filepath)
+function is_zip(string $filepath) : bool
 {
   return 'PK' === get_filehead($filepath,2);
 }
@@ -104,7 +104,7 @@ function is_zip($filepath)
 /*------------------------------------------------------------------------------
   マイクロソフト OLE2 複合ファイルの判別 (MS Office ファイル等)
 ------------------------------------------------------------------------------*/
-function is_compoundfile($filepath)
+function is_compoundfile(string $filepath) : bool
 {
   return "\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1" === get_filehead($filepath,8);
 }
@@ -112,29 +112,29 @@ function is_compoundfile($filepath)
 /*------------------------------------------------------------------------------
   SSLプロトコル判別
 ------------------------------------------------------------------------------*/
-function is_ssl()
+function is_ssl() : bool
 {
   $rv = false;
-  if ( isset($_SERVER['HTTPS']) === true ) // Apache
-    {
-      $rv = ( $_SERVER['HTTPS'] === 'on' or $_SERVER['HTTPS'] === '1' );
-    }
-  elseif ( isset($_SERVER['SSL']) === true ) // IIS
-    {
-      $rv = ( $_SERVER['SSL'] === 'on' );
-    }
-  elseif ( isset($_SERVER['HTTP_X_FORWARDED_PROTO']) === true ) // Reverse proxy
-    {
-      $rv = ( strtolower($_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https' );
-    }
-  elseif ( isset($_SERVER['HTTP_X_FORWARDED_PORT']) === true ) // Reverse proxy
-    {
-      $rv = ( $_SERVER['HTTP_X_FORWARDED_PORT'] === '443' );
-    }
-  elseif ( isset($_SERVER['SERVER_PORT']) === true )
-    {
-      $rv = ( $_SERVER['SERVER_PORT'] === '443' );
-    }
+  if (isset($_SERVER['HTTPS']) === true) // Apache
+  {
+    $rv = ($_SERVER['HTTPS'] === 'on' or $_SERVER['HTTPS'] === '1');
+  }
+  elseif (isset($_SERVER['SSL']) === true) // IIS
+  {
+    $rv = ($_SERVER['SSL'] === 'on');
+  }
+  elseif (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) === true) // Reverse proxy
+  {
+    $rv = (strtolower($_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https');
+  }
+  elseif (isset($_SERVER['HTTP_X_FORWARDED_PORT']) === true) // Reverse proxy
+  {
+    $rv = ($_SERVER['HTTP_X_FORWARDED_PORT'] === '443');
+  }
+  elseif (isset($_SERVER['SERVER_PORT']) === true)
+  {
+    $rv = ($_SERVER['SERVER_PORT'] === '443');
+  }
 
   return $rv;
 }
@@ -143,29 +143,31 @@ function is_ssl()
   $num が 0以上ならファイルの先頭 $num バイトを返す (バイナリ) 
   その他なら、$filepathをテキストと判断し、先頭行を返す。
 ------------------------------------------------------------------------------*/
-function get_filehead($filepath,$num = 0)
+function get_filehead(string $filepath,int $num = 0) : string|false
 {
-  if(!is_file($filepath))
-    return false;
+  $rv = false;
 
-  if($num > 0)
+  if (!is_file($filepath))
+    return $rv;
+
+  if ($num > 0)
+  {
+    if (false !== ($fh = fopen($filepath, DIRECTORY_SEPARATOR === '\\' ? 'rb' : 'r')))
     {
-      if(false !== ($fh = fopen($filepath,DIRECTORY_SEPARATOR === '\\' ? 'rb' : 'r')))
-        {
-          fseek($fh,0);
-          $rv = fread($fh,$num);
-        }
+      fseek($fh, 0);
+      $rv = fread($fh, $num);
     }
+  }
   else
+  {
+    if (false !== ($fh = fopen($filepath, 'r')))
     {
-      if(false !== ($fh = fopen($filepath,'r')))
-        {
-          fseek($fh,0);
-          $rv = rtrim(fgets($fh));
-        }
+      fseek($fh, 0);
+      $rv = rtrim(fgets($fh));
     }
+  }
 
-  if($fh !== false)
+  if ($fh !== false)
     fclose($fh);
 
   return $rv;
@@ -180,7 +182,7 @@ function get_filehead($filepath,$num = 0)
    - PDO派生クラスが存在すればそのクラスのインスタンス生成を優先させる。
 
 ------------------------------------------------------------------------------*/
-function GetPdoInstance(string $dsn,string $user = '',string $passwd = '',array $options = [])
+function GetPdoInstance(string $dsn,string $user = '',string $passwd = '',array $options = []) : PDOExtension|false
 {
   static $CACHE = [];
 
@@ -200,7 +202,7 @@ function GetPdoInstance(string $dsn,string $user = '',string $passwd = '',array 
   try {
     $rv = PDOExtension::GetInstance($dsn,$user,$passwd,$options);
   } catch(Exception $e) {
-    $rv = new PDO($dsn,$user,$passwd,$options);
+    throw $e;
   } finally {
     if(false !== $rv)
       $CACHE[$key] = $rv;
@@ -212,7 +214,7 @@ function GetPdoInstance(string $dsn,string $user = '',string $passwd = '',array 
 /*------------------------------------------------------------------------------
   任意の位置に要素を挿入する。
 ------------------------------------------------------------------------------*/
-function array_inserter(&$ar,$item,$pos = 0)
+function array_inserter(array &$ar,mixed $item,int $pos = 0) : void
 {
   count($ar);
   if($pos == 0)
@@ -236,7 +238,7 @@ function array_inserter(&$ar,$item,$pos = 0)
   $only_index を false にすると、foreach でハッシュを含むすべて値に対して
   同一比較を行います。
 ------------------------------------------------------------------------------*/
-function array_identical(array $array1,array $array2,$only_index = true)
+function array_identical(array $array1,array $array2,bool $only_index = true) : bool
 {
   if(empty($array1) || empty($array2))
     return false;
@@ -244,7 +246,7 @@ function array_identical(array $array1,array $array2,$only_index = true)
   return $only_index ? _array_identical_($array1,$array2) : ($array1 === $array2);
 }
 
-function _array_identical_(array $a,array $b,$r = true)
+function _array_identical_(array $a,array $b,bool $r = true) : bool
 {
   $count = 0;
   foreach($a as $i => $v1)
@@ -265,7 +267,7 @@ function _array_identical_(array $a,array $b,$r = true)
 /*------------------------------------------------------------------------------
   一時的なワーキングファイル名を生成
 ------------------------------------------------------------------------------*/
-function get_temporary_filename($prefix = 'auto_',$suffix = '.dat')
+function get_temporary_filename(string $prefix = 'auto_',string $suffix = '.dat') : string
 {
   return $prefix.date('Ymd').str_uniqid().$suffix;
 }
@@ -273,7 +275,7 @@ function get_temporary_filename($prefix = 'auto_',$suffix = '.dat')
 /*------------------------------------------------------------------------------
   一時的に使用するファイルパスを生成して返す。
 ------------------------------------------------------------------------------*/
-function get_temporary_filepath($savedir,$hint=false)
+function get_temporary_filepath(string $savedir,int|false $hint=false) : string
 {
   $filename = str_uniqid();
   if(is_int($hint))
@@ -286,7 +288,7 @@ function get_temporary_filepath($savedir,$hint=false)
 /*------------------------------------------------------------------------------
  decide path prefix for save upload files.
 ------------------------------------------------------------------------------*/
-function create_path_prefix($basename)
+function create_path_prefix(string $basename) : string
 {
   $rv = 'unknown';
   if(strlen($basename) > 2)
@@ -300,7 +302,7 @@ function create_path_prefix($basename)
 /*------------------------------------------------------------------------------
   decide path for save upload files and make directory.
 ------------------------------------------------------------------------------*/
-function create_path($hint,$rootpath)
+function create_path(string $hint,string $rootpath) : string|false
 {
   if(empty($rootpath) || !is_dir($rootpath))
     $rootpath = '.';
@@ -322,7 +324,7 @@ function create_path($hint,$rootpath)
 /*------------------------------------------------------------------------------
   decide basename of save upload files.
 ------------------------------------------------------------------------------*/
-function create_basename($_file,$rootpath)
+function create_basename(array $_file,string $rootpath) : string
 {
   //キーをローカル変数に展開
   extract($_file);
@@ -356,7 +358,7 @@ function create_basename($_file,$rootpath)
 /*------------------------------------------------------------------------------
   merge array if key is not exists
 ------------------------------------------------------------------------------*/
-function array_merge_unless_exists($src,$additionals)
+function array_merge_unless_exists(array $src,array $additionals) : array
 {
   foreach($additionals as $n => $v)
     if(!array_key_exists($n,$src))
@@ -369,7 +371,7 @@ function array_merge_unless_exists($src,$additionals)
 /*------------------------------------------------------------------------------
   calculate check digit modulus10w31
 ------------------------------------------------------------------------------*/
-function check_digit_12($num)
+function check_digit_12(string $num) : string|int
 {
   if(strlen($num) != 12)
     throw new RuntimeException('invalid parameter');
@@ -392,7 +394,7 @@ function check_digit_12($num)
 /*------------------------------------------------------------------------------
   calculate check digit modulus11w102
 ------------------------------------------------------------------------------*/
-function check_digit_9($num)
+function check_digit_9(string $num) : int|string
 {
   if(strlen($num) != 9)
     throw new RuntimeException('invalid parameter');
@@ -414,7 +416,7 @@ function check_digit_9($num)
 /*------------------------------------------------------------------------------
   helper assert
 ------------------------------------------------------------------------------*/
-function asserter($mixed,$message)
+function asserter(mixed $mixed,string $message) : void
 {
   assert($mixed,new RuntimeException($message));
 }

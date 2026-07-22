@@ -1,9 +1,10 @@
-<?php
-/********************************************************************************
-  CLI functions
+<?php /**************************************************************************
+ * 
+  CLI functions for teminal
+
 ********************************************************************************/
 // echo for STDERR 
-function erro(...$outs) : int|false
+function erro(string ...$outs) : int|false
 {
   return fputs(STDERR,implode('',$outs));
 }

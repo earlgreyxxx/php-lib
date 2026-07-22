@@ -13,7 +13,7 @@ class DatabaseRow extends DatabaseTable
   // Instances
   // -----------------------------------------------------------------------
   // constructor
-  public function __construct(PDOExtension $pdo,$table,$init = null,$init_is_hash = false)
+  public function __construct(PDOExtension $pdo,string $table,mixed $init = null,bool $init_is_hash = false)
   {
     parent::__construct($pdo,$table);
     $this->setIdColumn();
@@ -42,23 +42,20 @@ class DatabaseRow extends DatabaseTable
     $this->set($obj);
   }
 
-  protected function initialize($init) : void
+  protected function initialize(mixed $init) : void
   {
     $this->load($init);
   }
 
   // table row
-  protected $row;
-  public function get()
+  protected stdClass $row;
+  public function get() : stdClass
   {
     return $this->row;
   }
 
-  public function set($obj,$array_is_hash = false)
+  public function set(array|stdClass $obj,bool $array_is_hash = false) : static
   {
-    if(!is_array($obj) && !($obj instanceof stdClass))
-      throw new RuntimeException(_('parameter 1st is invalid type'));
-
     if(is_array($obj))
     {
       $pdo = $this->getHandle();
@@ -99,11 +96,11 @@ class DatabaseRow extends DatabaseTable
     return $this;
   }
 
-  protected $exists = false;
+  protected bool $exists = false;
 
-  public function exists($set = null)
+  public function exists(?bool $set = null) : bool|static
   {
-    if(is_bool($set))
+    if(null !== $set)
     {
       $this->exists = $set;
       return $this;
@@ -112,7 +109,7 @@ class DatabaseRow extends DatabaseTable
     return $this->exists;
   }
 
-  public function chkExists($isSet = false) : bool
+  public function chkExists(bool $isSet = false) : bool
   {
     $table = $this->getTable();
     $obj = $this->get();
@@ -130,21 +127,19 @@ class DatabaseRow extends DatabaseTable
     return $rv;
   }
 
-  protected function validation(stdClass $obj)
+  protected function validation(stdClass $obj) : stdClass|false
   {
-    $pdo = $this->getHandle();
-    $table = $this->getTable();
-    $rv = false;
+    $rv = $obj;
 
     $columns = $this->getColumns();
     array_shift($columns);
 
     foreach($columns as $column)
     {
-      if(!property_exists($obj,$column))
+      if(false === ($rv = property_exists($obj,$column)))
         return $rv;
     }
-    return $obj;
+    return $rv;
   }
 
   protected function insert() : string|false
@@ -229,9 +224,9 @@ class DatabaseRow extends DatabaseTable
     return $rv;
   }
 
-  protected function _imp_load_from_pk(int $id) : bool
+  protected function _imp_load_from_pk(int $pk_value) : bool
   {
-    return $this->_imp_load_from_uniq($this->getIdColumn(),$id);
+    return $this->_imp_load_from_uniq($this->getIdColumn(),$pk_value);
   }
 
   protected function _imp_load_from_uniq(string $uniq_columnname,mixed $value) : bool
@@ -333,7 +328,7 @@ class DatabaseRow extends DatabaseTable
 
   // load from db
   // if already exists $this->row , return it.
-  public function load($uniq_column_value) : bool
+  public function load(int $uniq_column_value) : bool
   {
     if($this->exists())
       throw new RuntimeException(_('already loaded'));
@@ -342,7 +337,7 @@ class DatabaseRow extends DatabaseTable
   }
 
   // update to db
-  public function save(?array $columns = null) : int|bool
+  public function save(?array $columns = null) : string|bool
   {
     $id = $this->getIdColumn();
     if($columns === null)
@@ -423,14 +418,14 @@ class DatabaseRow extends DatabaseTable
   }
 
   // implemet __get/__set/__isset/__unset
-  public function __get($name) : mixed
+  public function __get(string $name) : mixed
   {
     $obj = $this->get();
     return $obj->{$name};
   }
 
   protected $columnChanged = [];
-  public function __set($name,$value) : void
+  public function __set(string $name,mixed $value) : void
   {
     $obj = $this->get();
     if(property_exists($obj,$name))
@@ -449,13 +444,13 @@ class DatabaseRow extends DatabaseTable
     }
   }
 
-  public function __isset($name) : bool
+  public function __isset(string $name) : bool
   {
     $obj = $this->get();
     return property_exists($obj,$name) && $obj->{$name} !== NULL;
   }
 
-  public function __unset($name) : void
+  public function __unset(string $name) : void
   {
     throw new RuntimeException(_('can not unset property'));
   }
