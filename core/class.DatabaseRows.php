@@ -65,11 +65,14 @@ class DatabaseRows extends DatabaseTable implements Iterator,ArrayAccess,Countab
     return $this;
   }
 
-  private ?callable $rowClass = null;
+  private mixed $rowClass = null;
   protected function getRowClass() : callable
   {
     if(!$this->rowClass)
       $this->rowClass = fn($param) => null;
+
+    if(is_callable($this->rowClass))
+      throw new RuntimeException(_('rowClass must be type of callable'));
 
     return $this->rowClass;
   }
