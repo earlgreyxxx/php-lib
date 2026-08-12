@@ -104,7 +104,7 @@ class DatabaseRows extends DatabaseTable implements Iterator,ArrayAccess,Countab
   }
 
   //
-  protected stdClass $row;
+  protected stdClass|false $row;
   private bool $returnStdObject = true;
   public function setReturnStdObject() : static
   {
