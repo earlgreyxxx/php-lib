@@ -136,8 +136,8 @@ class DatabaseRow extends DatabaseTable
 
     foreach($columns as $column)
     {
-      if(false === ($rv = property_exists($obj,$column)))
-        return $rv;
+      if(false === ($isExists = property_exists($obj,$column)))
+        return $isExists;
     }
     return $rv;
   }
