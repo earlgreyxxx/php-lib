@@ -85,7 +85,7 @@ function business_year_end_month() : int
 
 // 指定されたUNIX時間における年度を返す
 // --------------------------------------------------
-function get_business_year(int|string|null $time = null,int $start_month = 4) : int
+function get_business_year(int|string|null $time = null,int $start_month = 4) : int|false
 {
   if(empty($time))
     $time = time();

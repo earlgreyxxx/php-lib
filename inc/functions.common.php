@@ -77,12 +77,7 @@ function rrmdir(string $dir,string $reg_pattern = '') : bool
 ------------------------------------------------------------------------------*/
 function set_windows_console() : void
 {
-  function sjis_buffering(string $buffer)
-  {
-    return mb_convert_encoding($buffer, 'SJIS-WIN', 'UTF-8');
-  }
-
-  ob_start('sjis_buffering');
+  ob_start(fn(string $buffer) => mb_convert_encoding($buffer, 'SJIS-WIN', 'UTF-8'));
 }
 
 /*------------------------------------------------------------------------------

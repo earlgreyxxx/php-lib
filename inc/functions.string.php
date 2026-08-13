@@ -30,19 +30,19 @@ function str_sanitize_decode(?string $src) : string
 {
   return htmlspecialchars_decode($src ?? '',ENT_QUOTES);
 }
-function str_sanitize_html(?string $html,array $tags = ['script','object']) : string
+function str_sanitize_html(?string $html,array|string $tags = ['script','object']) : string
 {
   $rv = '';
   if(!is_array($tags) && is_string($tags))
     $tags = preg_split('/[\s,;]+/',$tags);
 
   foreach($tags as $tag)
-    {
-      $pattern = sprintf('/<%s(\s*.*?)>(.*?)<\/%s>/is',$tag,$tag);
-      $replace = sprintf('&lt;%s$1&gt;$2&lt;/%s&gt;',$tag,$tag);
+  {
+    $pattern = sprintf('/<%s(\s*.*?)>(.*?)<\/%s>/is',$tag,$tag);
+    $replace = sprintf('&lt;%s$1&gt;$2&lt;/%s&gt;',$tag,$tag);
 
-      $rv = preg_replace($pattern,$replace,$html);
-    }
+    $html = preg_replace($pattern, $replace, $html);
+  }
 
   return str_replace("\\\"","\"",$html);
 }
@@ -182,18 +182,15 @@ function str_bytes(string $num,int $float = 0,array $unit = ['Byte','KB','MB','G
 ------------------------------------------------------------------------------*/
 function extract_unit_size(string $num_str) : int|false
 {
-  $rv = false;
-  static $unit_base = array('k' => 1, 'm' => 2, 'g' => 3, 't' => 3, 'p' => 4, 'e' => 5);
+  static $unit_base = ['k' => 1, 'm' => 2, 'g' => 3, 't' => 4, 'p' => 5, 'e' => 6];
 
-  if(preg_match('/^([\+\-]?\d+)(\.\d+)?([kmgte])b?$/i',$num_str,$m))
-  {
-    $num = floatval($m[1].$m[2]);
-    $unit = strtolower($m[3]);
+  if (!preg_match('/^([+-]?\d+)(\.\d+)?([kmgtpe])b?$/i', $num_str, $m))
+    return false;
 
-    $rv = $num * pow(1024, $unit_base[$unit]);
-  }
+  $num  = floatval($m[1] . $m[2]);
+  $unit = strtolower($m[3]);
 
-  return floor($rv);
+  return (int)floor( $num * pow(1024, $unit_base[$unit]));
 }
 
 /*------------------------------------------------------------------------------
@@ -402,13 +399,6 @@ function var_dump_to(mixed $mixed,mixed $to = '/dev/null') : void
   // no action if content is empty.
   if(empty($content))
     return;
-
-  $output = [];
-  $output[] = str_repeat('-',70);
-  $output[] = sprintf(' * %s  function: %s',date('Y-m-d H:i:s'),$caller[1]['function']);
-  $output[] = str_repeat('-',70);
-  $output[] = $content;
-  $output = implode("\n",$output) . "\n";
 
   if(is_string($to))
   {

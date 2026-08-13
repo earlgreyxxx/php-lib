@@ -255,11 +255,11 @@ function tcolor(string $text,string $fgcolor,string $bgcolor = '',bool $high = f
       throw new RuntimeException('not support background color string');
   }
 
-  if($high && $fgcolor > 0)
-    $fgcolor+=60;
+  if($high && $fgcolor_index > 0)
+    $fgcolor_index+=60;
     
-  if($high && $bgcolor > 0)
-    $bgcolor+=60;
+  if($high && $bgcolor_index > 0)
+    $bgcolor_index+=60;
 
   return tescseq($text,$fgcolor_index, $bgcolor_index);
 }
