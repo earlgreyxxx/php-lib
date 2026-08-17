@@ -160,11 +160,14 @@ class DatabaseRow extends DatabaseTable
         ->values($placeholders)
         ->insert();
 
-    $rv = false;
-    if(false !== ($sth = $db->prepare()) && DB::bindValues($sth,$values))
-      $rv = $sth->execute();
+    if(false === ($sth = $db->prepare()))
+    {
+      DB::SetErrorInfo($pdo->errorInfo());
+      DB::SetErrorInfo($db->getQuery());
+      throw new RuntimeException(_('Database access failed'));
+    }
 
-    if($rv === false)
+    if(!DB::bindValues($sth,$values) || false === $sth->execute())
     {
       DB::SetErrorInfo($sth->errorInfo());
       DB::SetErrorInfo($db->getQuery());
@@ -197,7 +200,7 @@ class DatabaseRow extends DatabaseTable
     foreach($columns as $column)
     {
       // check column name
-      if($isEmpty && false === array_search($column,$def_columns))
+      if(false === $isEmpty && !in_array($column,$def_columns))
         throw new RuntimeException(_('specified column is not defined in table'));
 
       $values[] = $this->{$column};
@@ -211,10 +214,14 @@ class DatabaseRow extends DatabaseTable
         ->where([$idname => $this->{$idname}]);
 
     $rv = false;
-    if(false !== ($sth = $db->prepare()) && DB::bindValues($sth,$values))
-      $rv = $sth->execute();
+    if(false === ($sth = $db->prepare()))
+    {
+      DB::setErrorInfo(print_r($pdo->errorInfo(),true));
+      DB::setErrorInfo($db->getQuery());
+      throw new RuntimeException(_('Database access failed'));
+    }
 
-    if($rv === false)
+    if(!DB::bindValues($sth,$values) || false === ($rv = $sth->execute()))
     {
       DB::setErrorInfo(print_r($sth->errorInfo(),true));
       DB::setErrorInfo($db->getQuery());
